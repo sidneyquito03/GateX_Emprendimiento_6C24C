@@ -16,9 +16,27 @@ export const Navbar = () => {
   };
 
   const switchRole = () => {
-    const newRole = userRole === "fan" ? "organizer" : "fan";
+    const currentRoles = ["fan", "reseller", "organizer"];
+    const currentIndex = currentRoles.indexOf(userRole);
+    const newRole = currentRoles[(currentIndex + 1) % currentRoles.length];
     localStorage.setItem("userRole", newRole);
-    window.location.href = newRole === "fan" ? "/dashboard" : "/organizer";
+    
+    const routes: { [key: string]: string } = {
+      fan: "/dashboard",
+      reseller: "/reseller",
+      organizer: "/organizer",
+    };
+    
+    window.location.href = routes[newRole];
+  };
+
+  const getRoleLabel = () => {
+    const roleLabels: { [key: string]: string } = {
+      fan: "Modo Revendedor",
+      reseller: "Modo Organizador",
+      organizer: "Modo Fan",
+    };
+    return roleLabels[userRole] || "Cambiar Modo";
   };
 
   return (
@@ -40,7 +58,13 @@ export const Navbar = () => {
             {isAuth ? (
               <>
                 <Link
-                  to={userRole === "fan" ? "/dashboard" : "/organizer"}
+                  to={
+                    userRole === "fan" 
+                      ? "/dashboard" 
+                      : userRole === "reseller" 
+                      ? "/reseller" 
+                      : "/organizer"
+                  }
                   className="text-foreground/80 hover:text-primary transition-colors"
                 >
                   Dashboard
@@ -50,7 +74,7 @@ export const Navbar = () => {
                 </Link>
                 <Button variant="ghost" size="sm" onClick={switchRole}>
                   <User className="mr-2 h-4 w-4" />
-                  {userRole === "fan" ? "Modo Organizador" : "Modo Fan"}
+                  {getRoleLabel()}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   Cerrar Sesión
@@ -92,7 +116,13 @@ export const Navbar = () => {
             {isAuth ? (
               <>
                 <Link
-                  to={userRole === "fan" ? "/dashboard" : "/organizer"}
+                  to={
+                    userRole === "fan" 
+                      ? "/dashboard" 
+                      : userRole === "reseller" 
+                      ? "/reseller" 
+                      : "/organizer"
+                  }
                   className="block py-2 text-foreground/80 hover:text-primary"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -107,7 +137,7 @@ export const Navbar = () => {
                 </Link>
                 <Button variant="ghost" size="sm" className="w-full justify-start" onClick={switchRole}>
                   <User className="mr-2 h-4 w-4" />
-                  {userRole === "fan" ? "Modo Organizador" : "Modo Fan"}
+                  {getRoleLabel()}
                 </Button>
                 <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
                   Cerrar Sesión

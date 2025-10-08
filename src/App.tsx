@@ -11,6 +11,7 @@ import EventDetail from "./pages/EventDetail";
 import Simbiosis from "./pages/Simbiosis";
 import Organizer from "./pages/Organizer";
 import Resale from "./pages/Resale";
+import ResellerDashboard from "./pages/ResellerDashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/simbiosis" element={<Simbiosis />} />
           <Route path="/organizer" element={<Organizer />} />
           <Route path="/resale" element={<Resale />} />
+          <Route path="/reseller" element={<ResellerDashboard />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
