@@ -138,13 +138,34 @@ const CreateEvent = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="image">URL de Imagen</Label>
+                  <Label htmlFor="image">URL de Imagen del Evento</Label>
                   <Input
                     id="image"
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://..."
+                    placeholder="https://example.com/mi-evento.jpg"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Puedes usar enlaces de Unsplash, Google Drive (enlace público), o cualquier URL de imagen.
+                    Ejemplos: https://unsplash.com/photos/[ID]/download?w=1200
+                  </p>
+                  
+                  {formData.image && (
+                    <div className="mt-3">
+                      <p className="text-xs text-muted-foreground mb-2">Vista previa:</p>
+                      <div className="w-full h-32 rounded-lg overflow-hidden border border-border">
+                        <img 
+                          src={formData.image} 
+                          alt="Vista previa del evento"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&h=600&fit=crop";
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>

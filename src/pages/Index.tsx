@@ -1,10 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Shield, Lock, TrendingUp, CheckCircle2, Star, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import gatexLogo from "@/assets/gatex-logo.png";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const isAuth = localStorage.getItem("isAuthenticated") === "true";
+  const userRole = localStorage.getItem("userRole");
+
+  useEffect(() => {
+    // Si ya está logueado, redirigir a su dashboard correspondiente
+    if (isAuth && userRole) {
+      setIsRedirecting(true);
+      
+      setTimeout(() => {
+        if (userRole === "fan") {
+          navigate("/dashboard");
+        } else if (userRole === "reseller") {
+          navigate("/reseller");
+        } else if (userRole === "organizer") {
+          navigate("/organizer");
+        }
+      }, 1500);
+    }
+  }, [isAuth, userRole, navigate]);
   const benefits = [
     {
       icon: Shield,
@@ -43,6 +66,24 @@ const Index = () => {
       rating: 5,
     },
   ];
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background via-background to-card">
+        <div className="text-center animate-fade-in">
+          <div className="flex items-center gap-4 mb-6">
+            <img src={gatexLogo} alt="GateX" className="h-24 w-24 animate-pulse" />
+            <h1 className="text-4xl md:text-5xl font-bold text-gradient">GateX</h1>
+          </div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold mb-2">¡Bienvenido de vuelta!</h2>
+          <p className="text-muted-foreground">
+            Detectamos tu sesión activa. Te estamos redirigiendo a tu dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

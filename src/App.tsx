@@ -12,6 +12,9 @@ import Simbiosis from "./pages/Simbiosis";
 import Organizer from "./pages/Organizer";
 import Resale from "./pages/Resale";
 import ResellerDashboard from "./pages/ResellerDashboard";
+import { ResellerComparison } from "./pages/ResellerComparison";
+import { UserProfile } from "./pages/UserProfile";
+import { PurchaseDetail } from "./pages/PurchaseDetail";
 import Settings from "./pages/Settings";
 import RoleSelection from "./pages/RoleSelection";
 import CreateEvent from "./pages/CreateEvent";
@@ -37,6 +40,9 @@ const App = () => (
           <Route path="/create-event" element={<CreateEvent />} />
           <Route path="/resale" element={<Resale />} />
           <Route path="/reseller" element={<ResellerDashboard />} />
+          <Route path="/reseller-comparison" element={<ResellerComparison />} />
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/purchase/:id" element={<PurchaseDetail />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

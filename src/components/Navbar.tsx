@@ -1,28 +1,61 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getUserProfile, clearUserData } from "@/lib/localStorage";
 import gatexLogo from "@/assets/gatex-logo.png";
 
 export const Navbar = () => {
-  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const isAuth = localStorage.getItem("isAuthenticated") === "true";
   const userRole = localStorage.getItem("userRole") || "fan";
 
+  useEffect(() => {
+    const loadProfile = () => {
+      const profile = getUserProfile();
+      if (profile) {
+        setUserProfile(profile);
+      } else {
+        const userData = localStorage.getItem("userGoogleData");
+        if (userData) {
+          setUserProfile(JSON.parse(userData));
+        }
+      }
+    };
+
+    // Cargar perfil inicial
+    loadProfile();
+
+    // Escuchar actualizaciones de perfil
+    const handleProfileUpdate = () => {
+      loadProfile();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, []);
+
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userRole");
+    clearUserData();
     window.location.href = "/";
   };
 
   const switchRole = () => {
-    // Clear current role and redirect to role selection
     window.location.href = "/role-selection";
   };
 
   const getRoleLabel = () => {
-    return "Cambiar Rol";
+    const roleLabels = {
+      fan: "👤 Fan",
+      reseller: "💼 Revendedor", 
+      organizer: "🏛️ Organizador"
+    };
+    return roleLabels[userRole as keyof typeof roleLabels] || "👤 Usuario";
   };
 
   return (
@@ -38,40 +71,89 @@ export const Navbar = () => {
             <Link to="/events" className="text-foreground/80 hover:text-primary transition-colors">
               Eventos
             </Link>
-            <Link to="/simbiosis" className="text-foreground/80 hover:text-primary transition-colors">
-              ¿Qué es GateX?
-            </Link>
+            
             {isAuth ? (
               <>
-                <Link
-                  to={
-                    userRole === "fan" 
-                      ? "/dashboard" 
-                      : userRole === "reseller" 
-                      ? "/reseller" 
-                      : "/organizer"
-                  }
-                  className="text-foreground/80 hover:text-primary transition-colors"
-                >
-                  Dashboard
+                {userRole === "fan" && (
+                  <>
+                    <Link to="/dashboard" className="text-foreground/80 hover:text-primary transition-colors">
+                      Mi Dashboard
+                    </Link>
+                    <Link to="/resale" className="text-foreground/80 hover:text-primary transition-colors">
+                      Reventa
+                    </Link>
+                  </>
+                )}
+                
+                {userRole === "reseller" && (
+                  <>
+                    <Link to="/reseller" className="text-foreground/80 hover:text-primary transition-colors">
+                      Mi Negocio
+                    </Link>
+                    <Link to="/dashboard" className="text-foreground/80 hover:text-primary transition-colors">
+                      Mis Tickets
+                    </Link>
+                  </>
+                )}
+                
+                {userRole === "organizer" && (
+                  <>
+                    <Link to="/organizer" className="text-foreground/80 hover:text-primary transition-colors">
+                      Panel Admin
+                    </Link>
+                    <Link to="/create-event" className="text-foreground/80 hover:text-primary transition-colors">
+                      Crear Evento
+                    </Link>
+                  </>
+                )}
+                
+                <Link to="/profile" className="text-foreground/80 hover:text-primary transition-colors">
+                  Mi Perfil
                 </Link>
+                
                 <Link to="/settings" className="text-foreground/80 hover:text-primary transition-colors">
                   Configuración
                 </Link>
-                <Button variant="ghost" size="sm" onClick={switchRole}>
-                  <User className="mr-2 h-4 w-4" />
-                  {getRoleLabel()}
-                </Button>
+                
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" size="sm" onClick={switchRole} className="flex items-center gap-2">
+                    {userProfile ? (
+                      userProfile.profileImage || userProfile.picture ? (
+                        <img 
+                          src={userProfile.profileImage || userProfile.picture} 
+                          alt={userProfile.name}
+                          className="h-8 w-8 rounded-full border-2 border-primary/30 object-cover"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm border-2 border-primary/30">
+                          {userProfile.name.charAt(0).toUpperCase()}
+                        </div>
+                      )
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-medium">{userProfile ? userProfile.name.split(' ')[0] : 'Usuario'}</span>
+                      <span className="text-xs text-muted-foreground">{getRoleLabel()}</span>
+                    </div>
+                  </Button>
+                </div>
+                
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   Cerrar Sesión
                 </Button>
               </>
             ) : (
-              <Link to="/auth">
-                <Button variant="hero" size="sm">
-                  Iniciar Sesión
-                </Button>
-              </Link>
+              <>
+                <Link to="/simbiosis" className="text-foreground/80 hover:text-primary transition-colors">
+                  ¿Qué es GateX?
+                </Link>
+                <Link to="/auth">
+                  <Button variant="hero" size="sm">
+                    Iniciar Sesión
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
 
@@ -92,28 +174,76 @@ export const Navbar = () => {
             >
               Eventos
             </Link>
-            <Link
-              to="/simbiosis"
-              className="block py-2 text-foreground/80 hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              ¿Qué es GateX?
-            </Link>
-            {isAuth ? (
+            
+            {!isAuth && (
+              <Link
+                to="/simbiosis"
+                className="block py-2 text-foreground/80 hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                ¿Qué es GateX?
+              </Link>
+            )}
+            
+            {isAuth && (
               <>
-                <Link
-                  to={
-                    userRole === "fan" 
-                      ? "/dashboard" 
-                      : userRole === "reseller" 
-                      ? "/reseller" 
-                      : "/organizer"
-                  }
-                  className="block py-2 text-foreground/80 hover:text-primary"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
+                {userRole === "fan" && (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="block py-2 text-foreground/80 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Mi Dashboard
+                    </Link>
+                    <Link
+                      to="/resale"
+                      className="block py-2 text-foreground/80 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Reventa
+                    </Link>
+                  </>
+                )}
+                
+                {userRole === "reseller" && (
+                  <>
+                    <Link
+                      to="/reseller"
+                      className="block py-2 text-foreground/80 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Mi Negocio
+                    </Link>
+                    <Link
+                      to="/dashboard"
+                      className="block py-2 text-foreground/80 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Mis Tickets
+                    </Link>
+                  </>
+                )}
+                
+                {userRole === "organizer" && (
+                  <>
+                    <Link
+                      to="/organizer"
+                      className="block py-2 text-foreground/80 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Panel Admin
+                    </Link>
+                    <Link
+                      to="/create-event"
+                      className="block py-2 text-foreground/80 hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Crear Evento
+                    </Link>
+                  </>
+                )}
+                
                 <Link
                   to="/settings"
                   className="block py-2 text-foreground/80 hover:text-primary"
@@ -121,15 +251,23 @@ export const Navbar = () => {
                 >
                   Configuración
                 </Link>
-                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={switchRole}>
-                  <User className="mr-2 h-4 w-4" />
-                  {getRoleLabel()}
-                </Button>
+                
+                <div className="py-2 border-t border-border">
+                  <p className="text-sm font-medium mb-1">{userProfile ? userProfile.name : 'Usuario'}</p>
+                  <p className="text-xs text-muted-foreground mb-2">{getRoleLabel()}</p>
+                  <Button variant="ghost" size="sm" className="w-full justify-start" onClick={switchRole}>
+                    <User className="mr-2 h-4 w-4" />
+                    Cambiar Rol
+                  </Button>
+                </div>
+                
                 <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
                   Cerrar Sesión
                 </Button>
               </>
-            ) : (
+            )}
+            
+            {!isAuth && (
               <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="hero" size="sm" className="w-full">
                   Iniciar Sesión

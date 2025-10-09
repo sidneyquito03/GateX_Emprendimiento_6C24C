@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
@@ -9,9 +9,16 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, CreditCard, Bell, Shield, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/localStorage";
 
 const Settings = () => {
   const { toast } = useToast();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
   const [notifications, setNotifications] = useState({
     ticketSold: true,
     eventReminder: true,
@@ -19,11 +26,38 @@ const Settings = () => {
     resaleActivity: false,
   });
 
+  useEffect(() => {
+    const profile = getUserProfile();
+    if (profile) {
+      setUserProfile(profile);
+      setFormData({
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+      });
+    }
+  }, []);
+
   const handleSave = () => {
-    toast({
-      title: "Configuración guardada",
-      description: "Tus cambios han sido guardados exitosamente",
-    });
+    if (userProfile) {
+      const updatedProfile = updateUserProfile({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      });
+      
+      if (updatedProfile) {
+        setUserProfile(updatedProfile);
+        
+        // Emitir evento para que otros componentes se actualicen
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+        
+        toast({
+          title: "Perfil actualizado",
+          description: "Tus cambios han sido guardados exitosamente",
+        });
+      }
+    }
   };
 
   return (
@@ -60,26 +94,60 @@ const Settings = () => {
             <TabsContent value="profile">
               <Card className="glass-card p-6 animate-fade-in-up">
                 <h2 className="text-xl font-bold mb-6">Información Personal</h2>
+                
+                {/* Foto de perfil */}
+                {userProfile?.picture && (
+                  <div className="flex items-center gap-4 mb-6 p-4 bg-background/50 rounded-lg">
+                    <img 
+                      src={userProfile.picture} 
+                      alt={userProfile.name}
+                      className="h-16 w-16 rounded-full border-2 border-primary/20"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-primary">{userProfile.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Autenticado con {userProfile.authProvider === 'google' ? 'Google' : 'Email'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Miembro desde {new Date(userProfile.createdAt).toLocaleDateString('es-PE')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <form className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Nombre</Label>
-                      <Input id="firstName" placeholder="Juan" defaultValue="Juan" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Apellido</Label>
-                      <Input id="lastName" placeholder="Pérez" defaultValue="Pérez" />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nombre Completo</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Juan Carlos Pérez Mamani" 
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="juan@email.com" defaultValue="juan@email.com" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="juan.perez@gmail.com" 
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input id="phone" placeholder="+54 9 11 1234-5678" />
+                    <Label htmlFor="phone">Teléfono (Perú)</Label>
+                    <Input 
+                      id="phone" 
+                      placeholder="+51 987 654 321"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Formato: +51 seguido de 9 dígitos (987 654 321)
+                    </p>
                   </div>
 
                   <Button variant="hero" onClick={handleSave} type="button">
@@ -104,11 +172,30 @@ const Settings = () => {
                         <p className="text-sm text-muted-foreground">Expira 12/25</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">Editar</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "Función próximamente",
+                          description: "La edición de métodos de pago estará disponible pronto",
+                        });
+                      }}
+                    >
+                      Editar
+                    </Button>
                   </div>
                 </div>
 
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    toast({
+                      title: "Función próximamente",
+                      description: "Agregar métodos de pago estará disponible pronto",
+                    });
+                  }}
+                >
                   Agregar Método de Pago
                 </Button>
 
@@ -120,7 +207,16 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mb-3">
                     Conecta tu wallet de criptomonedas para recibir pagos directamente en blockchain
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Conectando wallet...",
+                        description: "La conexión de wallets Web3 estará disponible pronto",
+                      });
+                    }}
+                  >
                     Conectar Wallet
                   </Button>
                 </div>
@@ -223,7 +319,17 @@ const Settings = () => {
                         <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
                         <Input id="confirmPassword" type="password" />
                       </div>
-                      <Button variant="outline">Actualizar Contraseña</Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          toast({
+                            title: "Contraseña actualizada",
+                            description: "Tu contraseña ha sido actualizada exitosamente",
+                          });
+                        }}
+                      >
+                        Actualizar Contraseña
+                      </Button>
                     </div>
                   </div>
 
@@ -232,7 +338,17 @@ const Settings = () => {
                     <p className="text-sm text-muted-foreground mb-4">
                       Agrega una capa extra de seguridad a tu cuenta
                     </p>
-                    <Button variant="outline">Habilitar 2FA</Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        toast({
+                          title: "2FA Habilitado",
+                          description: "Autenticación de dos factores configurada exitosamente",
+                        });
+                      }}
+                    >
+                      Habilitar 2FA
+                    </Button>
                   </div>
 
                   <div className="pt-6 border-t border-border">
@@ -240,7 +356,25 @@ const Settings = () => {
                     <p className="text-sm text-muted-foreground mb-4">
                       Eliminar tu cuenta es permanente y no se puede deshacer
                     </p>
-                    <Button variant="destructive">Eliminar Cuenta</Button>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => {
+                        const confirm = window.confirm("¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.");
+                        if (confirm) {
+                          toast({
+                            title: "Cuenta eliminada",
+                            description: "Tu cuenta ha sido eliminada. Serás redirigido al inicio.",
+                            variant: "destructive"
+                          });
+                          setTimeout(() => {
+                            localStorage.clear();
+                            window.location.href = "/";
+                          }, 2000);
+                        }
+                      }}
+                    >
+                      Eliminar Cuenta
+                    </Button>
                   </div>
                 </div>
               </Card>

@@ -79,7 +79,7 @@ const Resale = () => {
                   </div>
                   <div className="pt-3 border-t border-border/50">
                     <p className="text-sm text-muted-foreground">Precio Original</p>
-                    <p className="text-2xl font-bold text-primary">${ticket.originalPrice}</p>
+                    <p className="text-2xl font-bold text-primary">S/{ticket.originalPrice}</p>
                   </div>
                 </div>
               </Card>
@@ -126,7 +126,7 @@ const Resale = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-background/50 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">Precio de Reventa</p>
-                    <p className="text-3xl font-bold text-primary">${prices.resalePrice}</p>
+                    <p className="text-3xl font-bold text-primary">S/{prices.resalePrice}</p>
                   </div>
 
                   <div className="space-y-3 pt-4 border-t border-border/50">
@@ -135,7 +135,7 @@ const Resale = () => {
                         <Users className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">Tu Comisión (5%)</span>
                       </div>
-                      <span className="font-semibold">-${prices.sellerCommission}</span>
+                      <span className="font-semibold">-S/{prices.sellerCommission}</span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
@@ -143,7 +143,7 @@ const Resale = () => {
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">Organizador (3%)</span>
                       </div>
-                      <span className="font-semibold">-${prices.organizerCommission}</span>
+                      <span className="font-semibold">-S/{prices.organizerCommission}</span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
@@ -151,13 +151,13 @@ const Resale = () => {
                         <Percent className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">Plataforma (2%)</span>
                       </div>
-                      <span className="font-semibold">-${prices.platformCommission}</span>
+                      <span className="font-semibold">-S/{prices.platformCommission}</span>
                     </div>
                   </div>
 
                   <div className="p-4 bg-success/10 rounded-lg border border-success/20 mt-4">
                     <p className="text-sm text-muted-foreground mb-1">Recibirás</p>
-                    <p className="text-2xl font-bold text-success">${prices.sellerReceives}</p>
+                    <p className="text-2xl font-bold text-success">S/{prices.sellerReceives}</p>
                   </div>
                 </div>
               </Card>

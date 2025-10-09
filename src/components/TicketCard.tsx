@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { QrCode, Clock, CheckCircle, AlertCircle, Eye } from "lucide-react";
 
 interface TicketCardProps {
+  id: string;
   eventName: string;
   eventDate: string;
   zone: string;
@@ -11,16 +12,19 @@ interface TicketCardProps {
   price: number;
   onViewQR?: () => void;
   onResell?: () => void;
+  onViewDetails?: () => void;
 }
 
 export const TicketCard = ({ 
+  id,
   eventName, 
   eventDate, 
   zone, 
   status, 
   price,
   onViewQR,
-  onResell 
+  onResell,
+  onViewDetails 
 }: TicketCardProps) => {
   const statusConfig = {
     custody: {
@@ -59,10 +63,16 @@ export const TicketCard = ({
       <div className="flex items-center justify-between pt-4 border-t border-border/50">
         <div>
           <p className="text-sm text-muted-foreground">Precio</p>
-          <p className="text-xl font-bold text-primary">${price}</p>
+          <p className="text-xl font-bold text-primary">S/{price}</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {onViewDetails && (
+            <Button variant="outline" size="sm" onClick={onViewDetails}>
+              <Eye className="mr-2 h-4 w-4" />
+              Ver Detalles
+            </Button>
+          )}
           {onViewQR && status === "released" && (
             <Button variant="outline" size="sm" onClick={onViewQR}>
               <QrCode className="mr-2 h-4 w-4" />

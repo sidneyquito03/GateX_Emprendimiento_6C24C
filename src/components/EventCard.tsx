@@ -55,7 +55,7 @@ export const EventCard = ({
         <div className="flex items-center justify-between pt-4 border-t border-border/50">
           <div>
             <p className="text-sm text-muted-foreground">Desde</p>
-            <p className="text-xl font-bold text-primary">${minPrice}</p>
+            <p className="text-xl font-bold text-primary">S/{minPrice}</p>
           </div>
           <Link to={`/event/${id}`}>
             <Button variant="hero" size="sm">

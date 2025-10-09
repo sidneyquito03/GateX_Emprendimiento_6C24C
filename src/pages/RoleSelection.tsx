@@ -1,23 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, TrendingUp, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getUserProfile } from "@/lib/localStorage";
+import { OrganizerVerification } from "@/components/OrganizerVerification";
 import gatexLogo from "@/assets/gatex-logo.png";
 
 export default function RoleSelection() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showOrganizerVerification, setShowOrganizerVerification] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    // Verificar si el usuario ya está autenticado y tiene un rol seleccionado
+    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+    const existingRole = localStorage.getItem("userRole");
+    
+    if (isAuthenticated && existingRole) {
+      // Mostrar estado de redirección
+      setIsRedirecting(true);
+      
+      // Redireccionar automáticamente según el rol existente
+      setTimeout(() => {
+        if (existingRole === "fan") {
+          navigate("/dashboard");
+        } else if (existingRole === "reseller") {
+          navigate("/reseller");
+        } else if (existingRole === "organizer") {
+          navigate("/organizer");
+        }
+      }, 1500); // Dar tiempo para mostrar el mensaje
+      return;
+    }
+
+    // Verificar si hay datos del perfil guardados
+    const profile = getUserProfile();
+    if (profile) {
+      setUserProfile(profile);
+    } else {
+      // Fallback a datos de Google para compatibilidad
+      const userData = localStorage.getItem("userGoogleData");
+      if (userData) {
+        setUserProfile(JSON.parse(userData));
+      }
+    }
+  }, [navigate]);
 
   const handleRoleSelection = (role: string) => {
+    if (role === "organizer") {
+      // Para organizador, mostrar verificación avanzada
+      setShowOrganizerVerification(true);
+      return;
+    }
+
     setSelectedRole(role);
     localStorage.setItem("userRole", role);
     
+    const roleNames = {
+      fan: "Fan",
+      reseller: "Revendedor"
+    };
+    
     toast({
       title: "Rol seleccionado",
-      description: `Has seleccionado el rol de ${role === "fan" ? "Fan" : role === "reseller" ? "Revendedor" : "Organizador"}`,
+      description: `Has seleccionado el rol de ${roleNames[role as keyof typeof roleNames]}`,
     });
 
     // Redirect based on role
@@ -26,9 +77,24 @@ export default function RoleSelection() {
         navigate("/dashboard");
       } else if (role === "reseller") {
         navigate("/reseller");
-      } else if (role === "organizer") {
-        navigate("/organizer");
       }
+    }, 1000);
+  };
+
+  const handleOrganizerVerificationSuccess = () => {
+    console.log("🎉 handleOrganizerVerificationSuccess ejecutándose");
+    setShowOrganizerVerification(false);
+    setSelectedRole("organizer");
+    localStorage.setItem("userRole", "organizer");
+    
+    toast({
+      title: "✅ Verificación exitosa",
+      description: "Has sido verificado como organizador profesional",
+    });
+
+    console.log("🚀 Navegando a /organizer en 1 segundo");
+    setTimeout(() => {
+      navigate("/organizer");
     }, 1000);
   };
 
@@ -78,18 +144,56 @@ export default function RoleSelection() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-card">
       <div className="container mx-auto px-4 py-16">
-        <div className="flex flex-col items-center mb-12 animate-fade-in">
-          <div className="flex items-center gap-4 mb-6">
-            <img src={gatexLogo} alt="GateX" className="h-32 w-32" />
-            <h1 className="text-5xl md:text-6xl font-bold text-gradient">GateX</h1>
+        {/* Bienvenida para usuarios autenticados */}
+        {userProfile && (
+          <div className="flex justify-center mb-8 animate-fade-in">
+            <Card className="glass-card p-4 border-primary/20">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={userProfile.picture} 
+                  alt={userProfile.name}
+                  className="h-12 w-12 rounded-full border-2 border-primary/20"
+                />
+                <div>
+                  <h3 className="font-semibold text-primary">¡Bienvenido, {userProfile.name.split(' ')[0]}!</h3>
+                  <p className="text-sm text-muted-foreground">{userProfile.email}</p>
+                  {userProfile.phone && (
+                    <p className="text-xs text-muted-foreground">{userProfile.phone}</p>
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Selecciona tu <span className="text-gradient">Rol</span>
-          </h2>
-          <p className="text-muted-foreground text-center max-w-2xl">
-            Elige cómo quieres participar en el ecosistema de GateX. Cada rol tiene beneficios únicos y está protegido por blockchain.
-          </p>
-        </div>
+        )}
+
+        {isRedirecting ? (
+          <div className="flex flex-col items-center justify-center min-h-[400px] animate-fade-in">
+            <div className="flex items-center gap-4 mb-6">
+              <img src={gatexLogo} alt="GateX" className="h-32 w-32 animate-pulse" />
+              <h1 className="text-5xl md:text-6xl font-bold text-gradient">GateX</h1>
+            </div>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <h2 className="text-2xl font-bold mb-2">Redirigiendo automáticamente...</h2>
+              <p className="text-muted-foreground">
+                Ya tienes una sesión activa. Te estamos llevando a tu dashboard.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col items-center mb-12 animate-fade-in">
+              <div className="flex items-center gap-4 mb-6">
+                <img src={gatexLogo} alt="GateX" className="h-32 w-32" />
+                <h1 className="text-5xl md:text-6xl font-bold text-gradient">GateX</h1>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+                Selecciona tu <span className="text-gradient">Rol</span>
+              </h2>
+              <p className="text-muted-foreground text-center max-w-2xl">
+                Elige cómo quieres participar en el ecosistema de GateX. Cada rol tiene beneficios únicos y está protegido por blockchain.
+              </p>
+            </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {roles.map((role, index) => (
@@ -133,17 +237,27 @@ export default function RoleSelection() {
               </CardContent>
             </Card>
           ))}
-        </div>
+            </div>
 
-        <div className="mt-12 text-center">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate("/")}
-          >
-            ← Volver al inicio
-          </Button>
-        </div>
+            <div className="mt-12 text-center">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate("/")}
+              >
+                ← Volver al inicio
+              </Button>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Modal de verificación de organizador */}
+      {showOrganizerVerification && (
+        <OrganizerVerification
+          onSuccess={handleOrganizerVerificationSuccess}
+          onCancel={() => setShowOrganizerVerification(false)}
+        />
+      )}
     </div>
   );
 }

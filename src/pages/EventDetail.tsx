@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, Shield, Clock, Info } from "lucide-react";
+import { Calendar, MapPin, Users, Shield, Clock, Info, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { QRModal } from "@/components/QRModal";
+import { StadiumSeatMap } from "@/components/StadiumSeatMap";
+import { SeatSelection } from "@/components/SeatSelection";
+import { PaymentMethodsModal } from "@/components/PaymentMethodsModal";
+import { getAllEvents, purchaseTicket } from "@/lib/localStorage";
 import {
   Dialog,
   DialogContent,
@@ -19,22 +24,61 @@ const EventDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Verificar el rol del usuario con debugging
+  const userRole = localStorage.getItem("userRole");
+  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+  
+  // Debug info
+  console.log("🔍 EventDetail - Estado del usuario:");
+  console.log("  - Autenticado:", isAuthenticated);
+  console.log("  - Rol:", userRole);
+  console.log("  - Puede comprar:", userRole === "fan" || userRole === "reseller");
+  
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showSeatSelection, setShowSeatSelection] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<number>(0);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [purchasedTicket, setPurchasedTicket] = useState<any>(null);
+  const [event, setEvent] = useState<any>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<{seats: string[], totalPrice: number} | null>(null);
 
-  const event = {
-    title: "Final Copa América 2025",
-    date: "15 Julio 2025, 20:00",
-    location: "Estadio Nacional, Lima, Perú",
-    image: "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&h=600&fit=crop",
-    description: "¡No te pierdas la gran final de la Copa América 2025! Los mejores equipos del continente se enfrentarán en un partido histórico.",
-    zones: [
-      { name: "Tribuna VIP", price: 250, available: 50 },
-      { name: "Platea Alta", price: 120, available: 200 },
-      { name: "Platea Baja", price: 180, available: 150 },
-      { name: "Campo", price: 80, available: 500 },
-    ],
-  };
+  useEffect(() => {
+    const events = getAllEvents();
+    const foundEvent = events.find(e => e.id === id);
+    if (foundEvent) {
+      // TODOS los eventos son deportivos en GateX
+      setEvent({
+        ...foundEvent,
+        category: "deportivo",
+        sport: "fútbol"
+      });
+    } else {
+      // Evento por defecto si no se encuentra
+      setEvent({
+        id: "1",
+        title: "Eliminatorias Mundial 2026: Perú vs Brasil",
+        date: "15 Noviembre 2025, 20:00",
+        location: "Estadio Nacional, Lima, Perú",
+        image: "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&h=600&fit=crop",
+        description: "¡Partido decisivo de las Eliminatorias Sudamericanas! Perú recibe a Brasil en un encuentro que definirá el futuro mundialista de ambas selecciones. Una noche histórica en el fútbol peruano.",
+        category: "deportivo", // Marcador de que es evento deportivo
+        sport: "fútbol",
+        zones: [
+          { name: "GENERAL", price: 50, available: 2500 },
+          { name: "OCCIDENTE ALTA", price: 40, available: 800 },
+          { name: "OCCIDENTE BAJA", price: 30, available: 1200 },
+          { name: "ORIENTE ALTA", price: 25, available: 0 }, // Agotado
+          { name: "ORIENTE BAJA", price: 25, available: 1200 },
+          { name: "NORTE", price: 15, available: 3000 },
+          { name: "SUR", price: 15, available: 3000 },
+        ],
+      });
+    }
+  }, [id]);
 
   const handlePurchase = (zoneName: string) => {
     const isAuth = localStorage.getItem("isAuthenticated") === "true";
@@ -49,18 +93,181 @@ const EventDetail = () => {
       return;
     }
 
-    setSelectedZone(zoneName);
-    setShowPurchaseModal(true);
+    // SIMPLIFICADO: Solo establecer la zona y ir a selección de asientos
+    const zone = event.zones.find(z => z.name === zoneName);
+    if (zone) {
+      setSelectedZone(zoneName);
+      setSelectedPrice(zone.price);
+      setShowSeatSelection(true);
+    }
   };
 
   const confirmPurchase = () => {
-    toast({
-      title: "¡Compra exitosa!",
-      description: "Tu pago está en custodia hasta que el evento se complete",
-    });
-    setShowPurchaseModal(false);
-    setTimeout(() => navigate("/dashboard"), 1500);
+    console.log("🎫 confirmPurchase ejecutándose");
+    console.log("🪑 selectedSeats:", selectedSeats);
+    console.log("🏟️ selectedZone:", selectedZone);
+    console.log("💰 selectedPrice:", selectedPrice);
+    
+    if (!selectedSeats || selectedSeats.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debes seleccionar al menos un asiento",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const zone = event.zones.find(z => z.name === selectedZone);
+    if (zone) {
+      // Calcular precio total con comisión
+      const basePrice = selectedSeats.length * selectedPrice;
+      const totalWithFee = basePrice * 1.05; // 5% de comisión
+      
+      // Usar la función purchaseTicket de localStorage
+      const ticketId = purchaseTicket(event.title, selectedZone!, totalWithFee);
+      
+      const ticket = {
+        id: ticketId,
+        eventName: event.title,
+        zone: selectedZone,
+        date: event.date,
+        price: totalWithFee,
+        seat: selectedSeats.join(", "), // Asientos específicos seleccionados
+        seatNumbers: selectedSeats // Array de asientos para el PDF
+      };
+      
+      setPurchasedTicket(ticket);
+      toast({
+        title: "¡Compra exitosa!",
+        description: `Has comprado ${selectedSeats.length} asiento(s): ${selectedSeats.join(", ")}. Tu pago está en custodia hasta que el evento se complete.`,
+      });
+      setShowPurchaseModal(false);
+      
+      // Mostrar QR después de 1 segundo
+      setTimeout(() => {
+        setShowQRModal(true);
+      }, 1000);
+    }
   };
+
+  const handleDirectPurchase = (seats: string[], totalPrice: number) => {
+    console.log("🎫 Iniciando proceso de compra - Usuario:", userRole, "| Asientos:", seats.join(", "), "| Total: S/", totalPrice.toFixed(2));
+    
+    // Verificar autenticación
+    if (!isAuthenticated) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para comprar entradas",
+        variant: "destructive"
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    // Solo los organizadores NO pueden comprar
+    if (userRole === "organizer") {
+      toast({
+        title: "Acceso restringido",
+        description: "Los organizadores no pueden comprar entradas en sus propios eventos.",
+        variant: "destructive"
+      });
+      navigate("/organizer");
+      return;
+    }
+    
+    // Validar asientos seleccionados
+    if (!seats || seats.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debes seleccionar al menos un asiento",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Guardar datos de la compra pendiente y abrir modal de métodos de pago
+    setPendingPurchase({ seats, totalPrice });
+    setShowPaymentModal(true);
+    console.log("💳 Abriendo modal de métodos de pago para:", userRole);
+  };
+
+  const processPurchaseAfterPayment = () => {
+    if (!pendingPurchase) return;
+    
+    const { seats, totalPrice } = pendingPurchase;
+    console.log("💰 Procesando compra con método de pago confirmado");
+
+    // Procesar la compra
+    try {
+      // Generar ticket usando localStorage
+      const ticketId = purchaseTicket(event.title, selectedZone!, totalPrice);
+      console.log("✅ Ticket generado con ID:", ticketId);
+      
+      // Crear objeto del ticket
+      const ticket = {
+        id: ticketId,
+        eventName: event.title,
+        zone: selectedZone,
+        date: event.date,
+        time: event.time || "Por definir",
+        price: totalPrice,
+        seat: seats.join(", "),
+        seatNumbers: seats,
+        userRole: userRole,
+        purchaseDate: new Date().toISOString(),
+        status: "confirmed"
+      };
+      
+      // Guardar ticket comprado
+      setPurchasedTicket(ticket);
+      
+      // Ocultar selección de asientos y modal de pago
+      setShowSeatSelection(false);
+      setShowPaymentModal(false);
+      setPendingPurchase(null);
+      
+      // Toast de confirmación según el rol
+      const roleText = userRole === 'fan' ? 'Fan' : userRole === 'reseller' ? 'Revendedor' : 'Usuario';
+      
+      toast({
+        title: `¡Compra exitosa! (${roleText})`,
+        description: `${seats.length} asiento(s): ${seats.join(", ")} | Total: S/ ${totalPrice.toFixed(2)}`,
+      });
+      
+      console.log("🎉 Compra completada exitosamente para", userRole);
+      
+      // Mostrar QR modal con el boleto para descargar
+      setTimeout(() => {
+        setShowQRModal(true);
+      }, 1000);
+      
+    } catch (error) {
+      console.error("❌ Error procesando compra:", error);
+      toast({
+        title: "Error en la compra",
+        description: "Hubo un problema procesando tu compra. Intenta nuevamente.",
+        variant: "destructive"
+      });
+      // Limpiar estados en caso de error
+      setShowPaymentModal(false);
+      setPendingPurchase(null);
+    }
+  };
+
+  if (!event) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 pt-20 pb-12 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Cargando evento...</h2>
+            <p className="text-muted-foreground">Por favor espera un momento</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -99,7 +306,102 @@ const EventDetail = () => {
             <p className="text-foreground/80 text-lg">{event.description}</p>
           </Card>
 
-          {/* Security Notice */}
+          {/* Stadium Seat Map o Seat Selection - TODOS los eventos en GateX son deportivos */}
+          <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+            {userRole === "organizer" ? (
+              <Card className="p-6 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                    <Info className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-orange-900 dark:text-orange-100">
+                      Vista de Organizador
+                    </h3>
+                    <p className="text-orange-700 dark:text-orange-200 text-sm">
+                      Como organizador, no puedes comprar entradas. Puedes crear y gestionar eventos desde tu dashboard.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate("/organizer")}
+                    className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                  >
+                    Ir a Dashboard de Organizador
+                  </Button>
+                </div>
+              </Card>
+            ) : !isAuthenticated ? (
+              <Card className="p-6 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <Info className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                      Inicia sesión para comprar
+                    </h3>
+                    <p className="text-blue-700 dark:text-blue-200 text-sm">
+                      Necesitas una cuenta de GateX para comprar entradas de forma segura.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate("/auth")}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    Iniciar Sesión / Registrarse
+                  </Button>
+                </div>
+              </Card>
+            ) : !showSeatSelection ? (
+              <div>
+                <h3 className="text-xl font-bold mb-4">🏟️ Selecciona tu zona en el estadio</h3>
+                <StadiumSeatMap 
+                  eventName={event.title}
+                  onSeatSelect={(zone, price) => {
+                    setSelectedZone(zone);
+                    setSelectedPrice(price);
+                    setShowSeatSelection(true);
+                  }}
+                />
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">🪑 Selecciona tus asientos - {selectedZone}</h3>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowSeatSelection(false);
+                      setSelectedZone(null);
+                      setSelectedPrice(0);
+                    }}
+                  >
+                    🏟️ Volver al Mapa del Estadio
+                  </Button>
+                </div>
+                <SeatSelection
+                  zoneName={selectedZone!}
+                  zonePrice={selectedPrice}
+                  onBack={() => {
+                    setShowSeatSelection(false);
+                    setSelectedZone(null);
+                    setSelectedPrice(0);
+                  }}
+                  onConfirmSelection={(seats, totalPrice) => {
+                    console.log("🎫 Iniciando compra:", seats.length, "asientos por S/", totalPrice.toFixed(2));
+                    setSelectedSeats(seats);
+                    handleDirectPurchase(seats, totalPrice);
+                  }}
+                />
+              </div>
+            )}
+          </div>          {/* Security Notice */}
           <Card className="glass-card p-6 mb-8 border-primary/20 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -118,30 +420,60 @@ const EventDetail = () => {
             </div>
           </Card>
 
-          {/* Zones */}
+          {/* Zones - TODOS los eventos en GateX son deportivos */}
           <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-            <h2 className="text-2xl font-bold mb-6">Selecciona tu zona</h2>
+            <h2 className="text-2xl font-bold mb-6">
+              {!showSeatSelection ? "Usa el mapa interactivo o selecciona tu zona" : "Selecciona tu zona"}
+            </h2>
+            
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 text-sm flex items-center gap-2">
+                <span className="text-lg">⚽</span>
+                <strong>EVENTO DEPORTIVO:</strong> Selecciona tu zona en el mapa interactivo del estadio o usa las opciones directas abajo. 
+                Todos los eventos en GateX son deportivos con selección de asientos específicos.
+              </p>
+            </div>
+            
+
+            
             <div className="grid md:grid-cols-2 gap-6">
               {event.zones.map((zone, index) => (
-                <Card key={index} className="glass-card p-6 glow-on-hover">
+                <Card key={index} className={`glass-card p-6 glow-on-hover ${zone.available === 0 ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-lg mb-1">{zone.name}</h3>
+                      <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                        {zone.name}
+                        {zone.available === 0 && (
+                          <Badge variant="destructive" className="text-xs">AGOTADO</Badge>
+                        )}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        {zone.available} tickets disponibles
+                        {zone.available === 0 
+                          ? "No hay tickets disponibles"
+                          : `${zone.available} tickets disponibles`
+                        }
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">${zone.price}</p>
+                      <p className="text-2xl font-bold text-primary">S/{zone.price}</p>
                       <p className="text-xs text-muted-foreground">por ticket</p>
                     </div>
                   </div>
                   <Button 
                     variant="hero" 
                     className="w-full"
-                    onClick={() => handlePurchase(zone.name)}
+                    disabled={zone.available === 0}
+                    onClick={() => {
+                      // TODOS los eventos en GateX son deportivos - usar mapa interactivo
+                      setSelectedZone(zone.name);
+                      setSelectedPrice(zone.price);
+                      setShowSeatSelection(true);
+                    }}
                   >
-                    Comprar Entrada
+                    {zone.available === 0 
+                      ? "Agotado" 
+                      : "Seleccionar Asientos"
+                    }
                   </Button>
                 </Card>
               ))}
@@ -181,14 +513,32 @@ const EventDetail = () => {
                 <span className="text-muted-foreground">Zona</span>
                 <span className="font-medium">{selectedZone}</span>
               </div>
+              {selectedSeats.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Asientos</span>
+                  <span className="font-medium">{selectedSeats.join(', ')}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cantidad</span>
+                <span className="font-medium">{selectedSeats.length || 1} asiento(s)</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Fecha</span>
                 <span className="font-medium">{event.date}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">S/{(selectedPrice * (selectedSeats.length || 1)).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Comisión (5%)</span>
+                <span className="font-medium">S/{(selectedPrice * (selectedSeats.length || 1) * 0.05).toFixed(2)}</span>
+              </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
                 <span>Total</span>
                 <span className="text-primary">
-                  ${event.zones.find(z => z.name === selectedZone)?.price}
+                  S/{(selectedPrice * (selectedSeats.length || 1) * 1.05).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -204,6 +554,27 @@ const EventDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* QR Modal */}
+      <QRModal 
+        isOpen={showQRModal} 
+        onClose={() => {
+          setShowQRModal(false);
+          navigate("/dashboard");
+        }}
+        ticket={purchasedTicket}
+      />
+
+      {/* Payment Methods Modal */}
+      <PaymentMethodsModal 
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setPendingPurchase(null);
+        }}
+        userRole={userRole as 'fan' | 'reseller' | 'organizer'}
+        onPaymentConfirmed={processPurchaseAfterPayment}
+      />
 
       <Footer />
     </div>

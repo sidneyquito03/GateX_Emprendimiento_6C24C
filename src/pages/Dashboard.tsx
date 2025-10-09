@@ -1,58 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { TicketCard } from "@/components/TicketCard";
+import { QRModal } from "@/components/QRModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Wallet, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
+import { Wallet, TrendingUp, Clock, CheckCircle2, User, Shield, Search, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { getTickets, getUserStats, getUserProfile } from "@/lib/localStorage";
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showQR, setShowQR] = useState(false);
-  
-  const tickets = [
-    {
-      id: "1",
-      eventName: "Final Copa América 2025",
-      eventDate: "15 Julio 2025, 20:00",
-      zone: "Tribuna VIP",
-      status: "custody" as const,
-      price: 250,
-    },
-    {
-      id: "2",
-      eventName: "Clásico Universitario vs Alianza",
-      eventDate: "22 Junio 2025, 18:00",
-      zone: "Platea Alta",
-      status: "released" as const,
-      price: 120,
-    },
-  ];
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [currentRole, setCurrentRole] = useState<string>("");
 
-  const stats = [
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = () => {
+    // Cargar tickets del usuario
+    const userTickets = getTickets();
+    setTickets(userTickets);
+    
+    // Cargar estadísticas del usuario
+    const stats = getUserStats();
+    setUserStats(stats);
+    
+    // Cargar perfil del usuario
+    const profile = getUserProfile();
+    setUserProfile(profile);
+    
+    // Obtener rol actual
+    const role = localStorage.getItem("userRole") || "fan";
+    setCurrentRole(role);
+  };
+
+  const stats = userStats ? [
     {
       icon: Wallet,
       label: "Fondos en Custodia",
-      value: "$250",
+      value: `S/${userStats.fundsInCustody}`,
       color: "text-accent",
     },
     {
       icon: CheckCircle2,
       label: "Tickets Activos",
-      value: "2",
+      value: userStats.activeTickets.toString(),
       color: "text-success",
     },
     {
       icon: TrendingUp,
       label: "Tickets Revendidos",
-      value: "0",
+      value: userStats.ticketsResold.toString(),
       color: "text-primary",
     },
-  ];
+  ] : [];
 
   const handleResell = () => {
     window.location.href = "/resale";
@@ -65,12 +76,29 @@ const Dashboard = () => {
       <main className="flex-1 pt-20 pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="mb-8 animate-fade-in-up">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Mi Dashboard</h1>
-            <p className="text-muted-foreground">Gestiona tus tickets y reventas</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">Mi Dashboard</h1>
+                <p className="text-muted-foreground">Gestiona tus tickets y reventas</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {currentRole === "organizer" ? (
+                  <Shield className="h-5 w-5 text-primary" />
+                ) : currentRole === "reseller" ? (
+                  <TrendingUp className="h-5 w-5 text-accent" />
+                ) : (
+                  <User className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium capitalize bg-primary/10 text-primary px-3 py-1 rounded-full">
+                  {currentRole === "organizer" ? "Organizador" : 
+                   currentRole === "reseller" ? "Revendedor" : "Fan"}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
               <Card
                 key={index}
@@ -88,6 +116,30 @@ const Dashboard = () => {
                 </div>
               </Card>
             ))}
+
+            {/* Marketplace Card - Solo para fans */}
+            {currentRole === "fan" && (
+              <Card className="glass-card p-6 animate-fade-in-up bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Marketplace</p>
+                    <ShoppingBag className="h-5 w-5 text-primary" />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start hover:bg-primary/20"
+                    onClick={() => navigate('/reseller-comparison')}
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Comparar Revendedores
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Encuentra los mejores precios
+                  </p>
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Custody Progress */}
@@ -129,8 +181,26 @@ const Dashboard = () => {
                 >
                   <TicketCard
                     {...ticket}
-                    onViewQR={() => setShowQR(true)}
-                    onResell={handleResell}
+                    onViewDetails={() => {
+                      navigate(`/purchase/${ticket.id}`);
+                    }}
+                    onViewQR={() => {
+                      setSelectedTicket({
+                        id: ticket.id,
+                        eventName: ticket.eventName,
+                        zone: ticket.zone,
+                        date: ticket.eventDate,
+                        price: ticket.price
+                      });
+                      setShowQR(true);
+                    }}
+                    onResell={() => {
+                      toast({
+                        title: "Redirigiendo a reventa",
+                        description: "Te llevamos a la página de reventa de tickets",
+                      });
+                      navigate("/resale");
+                    }}
                   />
                 </div>
               ))}
@@ -140,21 +210,11 @@ const Dashboard = () => {
       </main>
 
       {/* QR Code Modal */}
-      <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Código QR de Entrada</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center py-6">
-            <div className="w-64 h-64 bg-foreground rounded-lg flex items-center justify-center mb-4">
-              <div className="w-56 h-56 bg-background rounded" />
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Presenta este código QR en la entrada del evento
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QRModal 
+        isOpen={showQR} 
+        onClose={() => setShowQR(false)}
+        ticket={selectedTicket}
+      />
 
       <Footer />
     </div>

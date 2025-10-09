@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, DollarSign, Package, Plus, Info } from "lucide-react";
+import { TrendingUp, DollarSign, Package, Plus, Info, BarChart3, Users, Settings, Zap, Target, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TransactionStatus } from "@/components/TransactionStatus";
+import { PaymentMethodsModal } from "@/components/PaymentMethodsModal";
 import {
   Dialog,
   DialogContent,
@@ -18,54 +19,58 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getTickets, getResaleOffers, createResaleOffer, getUserStats } from "@/lib/localStorage";
 
 const ResellerDashboard = () => {
   const { toast } = useToast();
   const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [priceIncrease, setPriceIncrease] = useState([2.5]);
+  const [selectedTicket, setSelectedTicket] = useState<string>("");
+  const [availableTickets, setAvailableTickets] = useState<any[]>([]);
+  const [activeOffers, setActiveOffers] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState<any>(null);
 
-  const stats = [
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = () => {
+    // Cargar tickets disponibles para reventa (en custodia)
+    const tickets = getTickets().filter(t => t.status === "custody");
+    setAvailableTickets(tickets);
+    
+    // Cargar ofertas activas
+    const offers = getResaleOffers().filter(o => o.status === "active");
+    setActiveOffers(offers);
+    
+    // Cargar estadísticas
+    const stats = getUserStats();
+    setUserStats(stats);
+  };
+
+  const stats = userStats ? [
     {
       icon: Package,
       label: "Ofertas Activas",
-      value: "2",
+      value: userStats.activeOffers.toString(),
       color: "text-primary",
     },
     {
       icon: TrendingUp,
       label: "Tickets Vendidos",
-      value: "5",
+      value: userStats.ticketsResold.toString(),
       color: "text-success",
     },
     {
       icon: DollarSign,
       label: "Fondos en Custodia",
-      value: "$525",
+      value: `S/${userStats.fundsInCustody}`,
       color: "text-accent",
     },
-  ];
-
-  const activeOffers = [
-    {
-      id: "1",
-      eventName: "Final Copa América 2025",
-      zone: "Tribuna VIP",
-      originalPrice: 250,
-      resalePrice: 262.5,
-      status: "active",
-      commission: 13.13,
-    },
-    {
-      id: "2",
-      eventName: "Clásico Universitario vs Alianza",
-      zone: "Platea Alta",
-      originalPrice: 120,
-      resalePrice: 126,
-      status: "active",
-      commission: 6.3,
-    },
-  ];
+  ] : [];
 
   const salesHistory = [
     {
@@ -76,25 +81,6 @@ const ResellerDashboard = () => {
       commission: 6.56,
       date: "18 Abril 2025",
       status: "completed",
-    },
-    {
-      id: "2",
-      eventName: "Sporting Cristal vs Melgar",
-      zone: "Popular",
-      soldPrice: 63,
-      commission: 3.15,
-      date: "10 Abril 2025",
-      status: "completed",
-    },
-  ];
-
-  const availableTickets = [
-    {
-      id: "3",
-      eventName: "Superclásico de América",
-      zone: "Platea Preferencial",
-      price: 200,
-      date: "20 Octubre 2025",
     },
   ];
 
@@ -115,11 +101,39 @@ const ResellerDashboard = () => {
   };
 
   const handleCreateOffer = () => {
-    toast({
-      title: "¡Oferta publicada!",
-      description: "Tu ticket está ahora disponible en el mercado de reventa",
-    });
-    setShowCreateOffer(false);
+    if (!selectedTicket) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un ticket",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const ticket = availableTickets.find(t => t.id === selectedTicket);
+    if (!ticket) return;
+
+    const newPrice = ticket.price * (1 + priceIncrease[0] / 100);
+    
+    try {
+      const offerId = createResaleOffer(selectedTicket, newPrice);
+      
+      toast({
+        title: "¡Oferta creada!",
+        description: "Tu ticket ha sido puesto en el mercado de reventa",
+      });
+      
+      setShowCreateOffer(false);
+      setSelectedTicket("");
+      setPriceIncrease([2.5]);
+      loadData(); // Recargar datos
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo crear la oferta de reventa",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -157,14 +171,59 @@ const ResellerDashboard = () => {
             ))}
           </div>
 
+          {/* Advanced Reseller Tools */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h3 className="font-medium text-blue-900">Analytics Pro</h3>
+                  <p className="text-xs text-blue-700">Análisis de mercado</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+              <div className="flex items-center gap-3">
+                <Target className="h-8 w-8 text-purple-600" />
+                <div>
+                  <h3 className="font-medium text-purple-900">Auto-Pricing</h3>
+                  <p className="text-xs text-purple-700">Precios automáticos</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <div className="flex items-center gap-3">
+                <Users className="h-8 w-8 text-green-600" />
+                <div>
+                  <h3 className="font-medium text-green-900">Red Revendedores</h3>
+                  <p className="text-xs text-green-700">Network profesional</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+              <div className="flex items-center gap-3">
+                <Globe className="h-8 w-8 text-orange-600" />
+                <div>
+                  <h3 className="font-medium text-orange-900">Mercado Global</h3>
+                  <p className="text-xs text-orange-700">Reventa internacional</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
           {/* Main Content */}
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <Tabs defaultValue="offers" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
                   <TabsTrigger value="offers">Mis Ofertas</TabsTrigger>
                   <TabsTrigger value="create">Crear Oferta</TabsTrigger>
+                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
                   <TabsTrigger value="history">Historial</TabsTrigger>
+                  <TabsTrigger value="settings">Configuración</TabsTrigger>
                 </TabsList>
 
                 {/* Mis Ofertas */}
@@ -185,18 +244,28 @@ const ResellerDashboard = () => {
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                         <div>
                           <p className="text-xs text-muted-foreground">Precio Original</p>
-                          <p className="text-lg font-bold">${offer.originalPrice}</p>
+                          <p className="text-lg font-bold">S/{offer.originalPrice}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Precio Reventa</p>
-                          <p className="text-lg font-bold text-primary">${offer.resalePrice}</p>
+                          <p className="text-lg font-bold text-primary">S/{offer.resalePrice}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Tu Comisión (5%)</p>
-                          <p className="text-sm font-semibold text-success">${offer.commission}</p>
+                          <p className="text-sm font-semibold text-success">S/{offer.commission}</p>
                         </div>
                         <div className="flex items-end">
-                          <Button variant="outline" size="sm" className="ml-auto">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="ml-auto"
+                            onClick={() => {
+                              toast({
+                                title: "Oferta cancelada",
+                                description: "Tu oferta de reventa ha sido cancelada exitosamente",
+                              });
+                            }}
+                          >
                             Cancelar Oferta
                           </Button>
                         </div>
@@ -224,14 +293,17 @@ const ResellerDashboard = () => {
                               </div>
                               <div className="text-right">
                                 <p className="text-xs text-muted-foreground">Precio</p>
-                                <p className="text-xl font-bold text-primary">${ticket.price}</p>
+                                <p className="text-xl font-bold text-primary">S/{ticket.price}</p>
                               </div>
                             </div>
                             <Button
                               variant="hero"
                               size="sm"
                               className="w-full mt-3"
-                              onClick={() => setShowCreateOffer(true)}
+                              onClick={() => {
+                                setSelectedTicket(ticket.id);
+                                setShowCreateOffer(true);
+                              }}
                             >
                               <Plus className="mr-2 h-4 w-4" />
                               Publicar Oferta
@@ -243,14 +315,95 @@ const ResellerDashboard = () => {
                       <div className="text-center py-8">
                         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                         <p className="text-muted-foreground mb-4">
-                          No tienes tickets disponibles para revender
+                          No tienes tickets deportivos disponibles para revender
                         </p>
                         <Link to="/events">
-                          <Button variant="outline">Explorar Eventos</Button>
+                          <Button variant="outline">⚽ Explorar Eventos Deportivos</Button>
                         </Link>
                       </div>
                     )}
                   </Card>
+                </TabsContent>
+
+                {/* Analytics */}
+                <TabsContent value="analytics" className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Market Trends */}
+                    <Card className="p-6">
+                      <h3 className="font-semibold text-lg mb-4 flex items-center">
+                        <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                        Tendencias de Mercado
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-accent/10 rounded-lg">
+                          <span className="text-sm font-medium">⚽ Fútbol Nacional</span>
+                          <span className="text-sm text-green-600 font-semibold">+25.8%</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-accent/10 rounded-lg">
+                          <span className="text-sm font-medium">🏀 Básquet Liga 1</span>
+                          <span className="text-sm text-green-600 font-semibold">+12.3%</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-accent/10 rounded-lg">
+                          <span className="text-sm font-medium">🏐 Voleibol Femenino</span>
+                          <span className="text-sm text-green-600 font-semibold">+18.7%</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-accent/10 rounded-lg">
+                          <span className="text-sm font-medium">🎾 Torneos ATP</span>
+                          <span className="text-sm text-orange-600 font-semibold">+5.1%</span>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Price Optimization */}
+                    <Card className="p-6">
+                      <h3 className="font-semibold text-lg mb-4 flex items-center">
+                        <Target className="h-5 w-5 mr-2 text-purple-600" />
+                        Optimización de Precios
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="p-4 border border-dashed border-primary/30 rounded-lg">
+                          <p className="text-sm font-medium mb-2">Precio Recomendado</p>
+                          <p className="text-2xl font-bold text-primary">+12-18%</p>
+                          <p className="text-xs text-muted-foreground">Basado en demanda actual</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="text-center p-3 bg-green-50 rounded-lg">
+                            <p className="text-xs text-green-700">Tasa de Venta</p>
+                            <p className="text-lg font-bold text-green-800">87%</p>
+                          </div>
+                          <div className="text-center p-3 bg-blue-50 rounded-lg">
+                            <p className="text-xs text-blue-700">Tiempo Promedio</p>
+                            <p className="text-lg font-bold text-blue-800">2.3d</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Competitor Analysis */}
+                    <Card className="p-6 md:col-span-2">
+                      <h3 className="font-semibold text-lg mb-4 flex items-center">
+                        <Users className="h-5 w-5 mr-2 text-green-600" />
+                        Análisis de Competencia
+                      </h3>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                          <p className="text-sm font-medium text-blue-900">Tu Posición</p>
+                          <p className="text-2xl font-bold text-blue-600">#3</p>
+                          <p className="text-xs text-blue-700">En tu categoría</p>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
+                          <p className="text-sm font-medium text-orange-900">Precio Promedio</p>
+                          <p className="text-2xl font-bold text-orange-600">+14%</p>
+                          <p className="text-xs text-orange-700">Vs precio original</p>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                          <p className="text-sm font-medium text-purple-900">Oportunidad</p>
+                          <p className="text-2xl font-bold text-purple-600">Alto</p>
+                          <p className="text-xs text-purple-700">Demanda vs oferta</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
                 </TabsContent>
 
                 {/* Historial */}
@@ -272,11 +425,11 @@ const ResellerDashboard = () => {
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                         <div>
                           <p className="text-xs text-muted-foreground">Precio de Venta</p>
-                          <p className="text-lg font-bold">${sale.soldPrice}</p>
+                          <p className="text-lg font-bold">S/{sale.soldPrice}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Tu Comisión Recibida</p>
-                          <p className="text-lg font-bold text-success">${sale.commission}</p>
+                          <p className="text-lg font-bold text-success">S/{sale.commission}</p>
                         </div>
                       </div>
                     </Card>
@@ -346,38 +499,47 @@ const ResellerDashboard = () => {
               <div className="p-4 bg-background/50 rounded-lg space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Precio Original:</span>
-                  <span className="font-semibold">${availableTickets[0].price}</span>
+                  <span className="font-semibold">S/{availableTickets[0].price}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Precio de Reventa:</span>
                   <span className="font-bold text-primary">
-                    ${calculatePrices(availableTickets[0].price, priceIncrease[0]).resalePrice}
+                    S/{calculatePrices(availableTickets[0].price, priceIncrease[0]).resalePrice}
                   </span>
                 </div>
-                <div className="pt-3 border-t border-border/50 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tu comisión (5%):</span>
-                    <span className="text-success font-semibold">
-                      -${calculatePrices(availableTickets[0].price, priceIncrease[0]).sellerCommission}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Organizador (3%):</span>
-                    <span>-${calculatePrices(availableTickets[0].price, priceIncrease[0]).organizerCommission}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Plataforma (2%):</span>
-                    <span>-${calculatePrices(availableTickets[0].price, priceIncrease[0]).platformCommission}</span>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-border/50">
-                  <div className="flex justify-between font-bold">
-                    <span>Recibirás:</span>
-                    <span className="text-success text-lg">
-                      ${calculatePrices(availableTickets[0].price, priceIncrease[0]).sellerReceives}
-                    </span>
-                  </div>
-                </div>
+                {(() => {
+                  const ticket = availableTickets.find(t => t.id === selectedTicket);
+                  if (!ticket) return null;
+                  const prices = calculatePrices(ticket.price, priceIncrease[0]);
+                  return (
+                    <>
+                      <div className="pt-3 border-t border-border/50 space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Tu comisión (5%):</span>
+                          <span className="text-success font-semibold">
+                            -S/{prices.sellerCommission}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Organizador (3%):</span>
+                          <span>-S/{prices.organizerCommission}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Plataforma (2%):</span>
+                          <span>-S/{prices.platformCommission}</span>
+                        </div>
+                      </div>
+                      <div className="pt-3 border-t border-border/50">
+                        <div className="flex justify-between font-bold">
+                          <span>Recibirás:</span>
+                          <span className="text-success text-lg">
+                            S/{prices.sellerReceives}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
