@@ -372,6 +372,97 @@ export const createResaleOffer = (ticketId: string, newPrice: number): string =>
   return offer.id;
 };
 
+// Función para vender un ticket en reventa
+export const sellResaleTicket = (offerId: string): boolean => {
+  try {
+    const offers = getResaleOffers();
+    const offerIndex = offers.findIndex(o => o.id === offerId);
+    
+    if (offerIndex === -1) return false;
+    
+    const offer = offers[offerIndex];
+    
+    // Marcar la oferta como vendida
+    offers[offerIndex] = { ...offer, status: "sold" };
+    localStorage.setItem(STORAGE_KEYS.RESALE_OFFERS, JSON.stringify(offers));
+    
+    // Actualizar el ticket como revendido
+    updateTicket(offer.ticketId, { status: "resold" });
+    
+    // Agregar el saldo a la cuenta del usuario
+    addUserBalance(offer.resalePrice);
+    
+    // Crear transacción de venta
+    const transaction: Transaction = {
+      id: `tx_${Date.now()}`,
+      type: "resale",
+      amount: offer.resalePrice,
+      eventName: offer.eventName,
+      status: "completed",
+      date: new Date().toISOString()
+    };
+    
+    saveTransaction(transaction);
+    
+    return true;
+  } catch (error) {
+    console.error("Error selling ticket:", error);
+    return false;
+  }
+};
+
+// Función para cancelar una oferta de reventa
+export const cancelResaleOffer = (offerId: string): boolean => {
+  try {
+    const offers = getResaleOffers();
+    const offerIndex = offers.findIndex(o => o.id === offerId);
+    
+    if (offerIndex === -1) return false;
+    
+    const offer = offers[offerIndex];
+    
+    // Marcar la oferta como cancelada
+    offers[offerIndex] = { ...offer, status: "cancelled" };
+    localStorage.setItem(STORAGE_KEYS.RESALE_OFFERS, JSON.stringify(offers));
+    
+    // Devolver el ticket a custodia
+    updateTicket(offer.ticketId, { status: "custody" });
+    
+    return true;
+  } catch (error) {
+    console.error("Error cancelling offer:", error);
+    return false;
+  }
+};
+
+// Función para agregar saldo a la cuenta del usuario
+export const addUserBalance = (amount: number): void => {
+  const currentBalance = getUserBalance();
+  const newBalance = currentBalance + amount;
+  localStorage.setItem("user_balance", newBalance.toString());
+};
+
+// Función para obtener el saldo del usuario
+export const getUserBalance = (): number => {
+  const balance = localStorage.getItem("user_balance");
+  return balance ? parseFloat(balance) : 0;
+};
+
+// Función para obtener ofertas activas del usuario
+export const getUserActiveOffers = (): ResaleOffer[] => {
+  return getResaleOffers().filter(o => o.status === "active");
+};
+
+// Función para obtener ofertas vendidas del usuario
+export const getUserSoldOffers = (): ResaleOffer[] => {
+  return getResaleOffers().filter(o => o.status === "sold");
+};
+
+// Función para obtener ofertas canceladas del usuario
+export const getUserCancelledOffers = (): ResaleOffer[] => {
+  return getResaleOffers().filter(o => o.status === "cancelled");
+};
+
 export const getUserStats = () => {
   const tickets = getTickets();
   const resaleOffers = getResaleOffers();
@@ -383,11 +474,13 @@ export const getUserStats = () => {
   const activeTickets = tickets.filter(t => t.status !== "resold").length;
   const ticketsResold = tickets.filter(t => t.status === "resold").length;
   const activeOffers = resaleOffers.filter(o => o.status === "active").length;
+  const userBalance = getUserBalance();
 
   return {
     fundsInCustody,
     activeTickets,
     ticketsResold,
-    activeOffers
+    activeOffers,
+    userBalance
   };
 };

@@ -10,7 +10,7 @@ import { Wallet, TrendingUp, Clock, CheckCircle2, User, Shield, Search, Shopping
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { getTickets, getUserStats, getUserProfile } from "@/lib/localStorage";
+import { getTickets, getUserStats, getUserProfile, getUserBalance } from "@/lib/localStorage";
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -47,6 +47,12 @@ const Dashboard = () => {
   const stats = userStats ? [
     {
       icon: Wallet,
+      label: "Mi Saldo",
+      value: `S/${userStats.userBalance || 0}`,
+      color: "text-success",
+    },
+    {
+      icon: Clock,
       label: "Fondos en Custodia",
       value: `S/${userStats.fundsInCustody}`,
       color: "text-accent",
@@ -55,13 +61,13 @@ const Dashboard = () => {
       icon: CheckCircle2,
       label: "Tickets Activos",
       value: userStats.activeTickets.toString(),
-      color: "text-success",
+      color: "text-primary",
     },
     {
       icon: TrendingUp,
       label: "Tickets Revendidos",
       value: userStats.ticketsResold.toString(),
-      color: "text-primary",
+      color: "text-muted-foreground",
     },
   ] : [];
 
