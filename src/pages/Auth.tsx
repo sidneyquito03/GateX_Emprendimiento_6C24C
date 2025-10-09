@@ -19,12 +19,11 @@ const Auth = () => {
 
     setTimeout(() => {
       localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", "fan");
       toast({
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente",
       });
-      navigate("/dashboard");
+      navigate("/role-selection");
       setIsLoading(false);
     }, 1000);
   };
@@ -35,12 +34,11 @@ const Auth = () => {
 
     setTimeout(() => {
       localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", "fan");
       toast({
         title: "¡Cuenta creada!",
         description: "Tu cuenta ha sido creada exitosamente",
       });
-      navigate("/dashboard");
+      navigate("/role-selection");
       setIsLoading(false);
     }, 1000);
   };
@@ -52,7 +50,7 @@ const Auth = () => {
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse-glow">
             <Shield className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-gradient">SIMBIOSIS Ticket</h1>
+          <h1 className="text-2xl font-bold text-gradient">GateX</h1>
           <p className="text-sm text-muted-foreground mt-2">Seguridad garantizada por blockchain</p>
         </div>
 

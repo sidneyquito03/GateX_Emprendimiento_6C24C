@@ -62,7 +62,7 @@ const Simbiosis = () => {
               <Shield className="h-10 w-10 text-primary" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              ¿Qué es <span className="text-gradient">SIMBIOSIS</span>?
+              ¿Qué es <span className="text-gradient">GateX</span>?
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Un sistema de custodia cíclica de fondos que protege a compradores y vendedores 
@@ -74,7 +74,7 @@ const Simbiosis = () => {
           <Card className="glass-card p-8 mb-12 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
             <h2 className="text-2xl font-bold mb-4 text-center">El Principio de Custodia Cíclica</h2>
             <p className="text-foreground/80 text-center max-w-2xl mx-auto mb-8">
-              En SIMBIOSIS, tu dinero no va directamente al vendedor. En su lugar, se almacena 
+              En GateX, tu dinero no va directamente al vendedor. En su lugar, se almacena 
               de forma segura en un contrato inteligente hasta que se cumplan todas las condiciones 
               del evento. Esto elimina el riesgo y genera confianza absoluta.
             </p>
@@ -120,7 +120,7 @@ const Simbiosis = () => {
 
           {/* Benefits */}
           <div className="mb-16 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-            <h2 className="text-3xl font-bold text-center mb-12">Beneficios de SIMBIOSIS</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">Beneficios de GateX</h2>
             
             <div className="grid md:grid-cols-2 gap-6">
               {benefits.map((benefit, index) => (

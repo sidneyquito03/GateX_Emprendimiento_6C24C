@@ -13,6 +13,8 @@ import Organizer from "./pages/Organizer";
 import Resale from "./pages/Resale";
 import ResellerDashboard from "./pages/ResellerDashboard";
 import Settings from "./pages/Settings";
+import RoleSelection from "./pages/RoleSelection";
+import CreateEvent from "./pages/CreateEvent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,11 +28,13 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/role-selection" element={<RoleSelection />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/events" element={<Events />} />
           <Route path="/event/:id" element={<EventDetail />} />
           <Route path="/simbiosis" element={<Simbiosis />} />
           <Route path="/organizer" element={<Organizer />} />
+          <Route path="/create-event" element={<CreateEvent />} />
           <Route path="/resale" element={<Resale />} />
           <Route path="/reseller" element={<ResellerDashboard />} />
           <Route path="/settings" element={<Settings />} />

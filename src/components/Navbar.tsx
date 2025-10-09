@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, Shield, User } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import { useState } from "react";
+import gatexLogo from "@/assets/gatex-logo.png";
 
 export const Navbar = () => {
   const location = useLocation();
@@ -16,27 +17,12 @@ export const Navbar = () => {
   };
 
   const switchRole = () => {
-    const currentRoles = ["fan", "reseller", "organizer"];
-    const currentIndex = currentRoles.indexOf(userRole);
-    const newRole = currentRoles[(currentIndex + 1) % currentRoles.length];
-    localStorage.setItem("userRole", newRole);
-    
-    const routes: { [key: string]: string } = {
-      fan: "/dashboard",
-      reseller: "/reseller",
-      organizer: "/organizer",
-    };
-    
-    window.location.href = routes[newRole];
+    // Clear current role and redirect to role selection
+    window.location.href = "/role-selection";
   };
 
   const getRoleLabel = () => {
-    const roleLabels: { [key: string]: string } = {
-      fan: "Modo Revendedor",
-      reseller: "Modo Organizador",
-      organizer: "Modo Fan",
-    };
-    return roleLabels[userRole] || "Cambiar Modo";
+    return "Cambiar Rol";
   };
 
   return (
@@ -44,8 +30,8 @@ export const Navbar = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 group">
-            <Shield className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
-            <span className="text-xl font-bold text-gradient">SIMBIOSIS</span>
+            <img src={gatexLogo} alt="GateX" className="h-10 w-10 transition-transform group-hover:scale-110" />
+            <span className="text-xl font-bold text-gradient">GateX</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">
@@ -53,7 +39,7 @@ export const Navbar = () => {
               Eventos
             </Link>
             <Link to="/simbiosis" className="text-foreground/80 hover:text-primary transition-colors">
-              ¿Qué es Simbiosis?
+              ¿Qué es GateX?
             </Link>
             {isAuth ? (
               <>
@@ -111,7 +97,7 @@ export const Navbar = () => {
               className="block py-2 text-foreground/80 hover:text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              ¿Qué es Simbiosis?
+              ¿Qué es GateX?
             </Link>
             {isAuth ? (
               <>

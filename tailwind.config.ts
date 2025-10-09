@@ -51,6 +51,10 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        orange: {
+          DEFAULT: "hsl(var(--orange-accent))",
+          foreground: "hsl(var(--orange-accent-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
