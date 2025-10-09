@@ -58,7 +58,7 @@ const ResellerDashboard = () => {
     },
     {
       id: "2",
-      eventName: "Clásico River vs Boca",
+      eventName: "Clásico Universitario vs Alianza",
       zone: "Platea Alta",
       originalPrice: 120,
       resalePrice: 126,
@@ -79,7 +79,7 @@ const ResellerDashboard = () => {
     },
     {
       id: "2",
-      eventName: "Racing vs Independiente",
+      eventName: "Sporting Cristal vs Melgar",
       zone: "Popular",
       soldPrice: 63,
       commission: 3.15,

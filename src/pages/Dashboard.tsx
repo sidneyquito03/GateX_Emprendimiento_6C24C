@@ -25,7 +25,7 @@ const Dashboard = () => {
     },
     {
       id: "2",
-      eventName: "Clásico River vs Boca",
+      eventName: "Clásico Universitario vs Alianza",
       eventDate: "22 Junio 2025, 18:00",
       zone: "Platea Alta",
       status: "released" as const,

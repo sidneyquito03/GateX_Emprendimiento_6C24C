@@ -29,9 +29,9 @@ export const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2 group">
-            <img src={gatexLogo} alt="GateX" className="h-10 w-10 transition-transform group-hover:scale-110" />
-            <span className="text-xl font-bold text-gradient">GateX</span>
+          <Link to="/" className="flex items-center space-x-3 group">
+            <img src={gatexLogo} alt="GateX" className="h-14 w-14 transition-transform group-hover:scale-110" />
+            <span className="text-2xl font-bold text-gradient">GateX</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">

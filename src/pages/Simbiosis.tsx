@@ -1,7 +1,8 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
-import { Shield, Lock, ArrowRight, CheckCircle2, Users, TrendingUp } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle2, Users, TrendingUp } from "lucide-react";
+import gatexLogo from "@/assets/gatex-logo.png";
 
 const Simbiosis = () => {
   const steps = [
@@ -58,12 +59,13 @@ const Simbiosis = () => {
         <div className="container mx-auto max-w-6xl">
           {/* Hero */}
           <div className="text-center mb-16 animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6 animate-pulse-glow">
-              <Shield className="h-10 w-10 text-primary" />
+            <div className="flex items-center justify-center gap-6 mb-6">
+              <img src={gatexLogo} alt="GateX" className="h-32 w-32 animate-pulse-glow" />
+              <h1 className="text-5xl md:text-6xl font-bold text-gradient">GateX</h1>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              ¿Qué es <span className="text-gradient">GateX</span>?
-            </h1>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Sistema de Custodia Cíclica
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Un sistema de custodia cíclica de fondos que protege a compradores y vendedores 
               mediante contratos inteligentes en blockchain

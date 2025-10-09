@@ -131,7 +131,7 @@ const CreateEvent = () => {
                       id="location"
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Estadio Monumental, Buenos Aires"
+                      placeholder="Estadio Nacional, Lima, Perú"
                       required
                     />
                   </div>

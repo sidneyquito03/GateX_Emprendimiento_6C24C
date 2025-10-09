@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Shield, Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import gatexLogo from "@/assets/gatex-logo.png";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -47,10 +48,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-background via-background to-primary/5">
       <Card className="w-full max-w-md glass-card p-8 animate-scale-in">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse-glow">
-            <Shield className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-gradient">GateX</h1>
+          <img src={gatexLogo} alt="GateX" className="h-20 w-20 mb-4 animate-pulse-glow" />
+          <h1 className="text-3xl font-bold text-gradient">GateX</h1>
           <p className="text-sm text-muted-foreground mt-2">Seguridad garantizada por blockchain</p>
         </div>
 

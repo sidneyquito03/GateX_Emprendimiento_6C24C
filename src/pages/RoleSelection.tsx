@@ -79,10 +79,13 @@ export default function RoleSelection() {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-card">
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col items-center mb-12 animate-fade-in">
-          <img src={gatexLogo} alt="GateX" className="h-24 w-24 mb-6" />
-          <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">
+          <div className="flex items-center gap-4 mb-6">
+            <img src={gatexLogo} alt="GateX" className="h-32 w-32" />
+            <h1 className="text-5xl md:text-6xl font-bold text-gradient">GateX</h1>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             Selecciona tu <span className="text-gradient">Rol</span>
-          </h1>
+          </h2>
           <p className="text-muted-foreground text-center max-w-2xl">
             Elige cómo quieres participar en el ecosistema de GateX. Cada rol tiene beneficios únicos y está protegido por blockchain.
           </p>

@@ -25,7 +25,7 @@ const EventDetail = () => {
   const event = {
     title: "Final Copa América 2025",
     date: "15 Julio 2025, 20:00",
-    location: "Estadio Monumental, Buenos Aires",
+    location: "Estadio Nacional, Lima, Perú",
     image: "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&h=600&fit=crop",
     description: "¡No te pierdas la gran final de la Copa América 2025! Los mejores equipos del continente se enfrentarán en un partido histórico.",
     zones: [

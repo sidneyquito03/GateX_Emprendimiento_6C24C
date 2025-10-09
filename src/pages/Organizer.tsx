@@ -46,7 +46,7 @@ const Organizer = () => {
       status: "Activo",
     },
     {
-      name: "Clásico River vs Boca",
+      name: "Clásico Universitario vs Alianza",
       sold: 600,
       capacity: 800,
       revenue: "$72,000",
@@ -70,7 +70,7 @@ const Organizer = () => {
       commission: 15.75,
     },
     {
-      event: "Clásico River vs Boca",
+      event: "Clásico Universitario vs Alianza",
       zone: "Platea Alta",
       originalPrice: 120,
       resalePrice: 126,

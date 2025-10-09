@@ -72,7 +72,7 @@ export const getEvents = (): Event[] => {
         id: "1",
         title: "Final Copa América 2025",
         date: "15 Julio 2025, 20:00",
-        location: "Estadio Monumental, Buenos Aires",
+        location: "Estadio Nacional, Lima, Perú",
         image: "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1200&h=600&fit=crop",
         description: "¡No te pierdas la gran final de la Copa América 2025!",
         zones: [
@@ -84,11 +84,11 @@ export const getEvents = (): Event[] => {
       },
       {
         id: "2",
-        title: "Clásico River vs Boca",
+        title: "Clásico Universitario vs Alianza",
         date: "22 Junio 2025, 18:00",
-        location: "Estadio River Plate, Buenos Aires",
+        location: "Estadio Monumental, Lima, Perú",
         image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&h=600&fit=crop",
-        description: "El clásico más apasionante del fútbol argentino",
+        description: "El clásico más apasionante del fútbol peruano",
         zones: [
           { name: "Platea VIP", price: 180, available: 80 },
           { name: "Tribuna", price: 100, available: 300 },
