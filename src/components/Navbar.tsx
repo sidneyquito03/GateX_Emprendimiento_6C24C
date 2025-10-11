@@ -108,15 +108,9 @@ export const Navbar = () => {
                   </>
                 )}
                 
-                {userProfile ? (
-                  <Link to="/dashboard" className="text-foreground/80 hover:text-primary transition-colors">
-                    Mi Perfil
-                  </Link>
-                ) : (
-                  <Link to="/auth" className="text-foreground/80 hover:text-primary transition-colors">
-                    Mi Perfil
-                  </Link>
-                )}
+                <Link to="/profile" className="text-foreground/80 hover:text-primary transition-colors">
+                  Mi Perfil
+                </Link>
                 <Link to="/settings" className="text-foreground/80 hover:text-primary transition-colors">
                   Configuración
                 </Link>
