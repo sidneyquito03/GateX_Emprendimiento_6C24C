@@ -15,18 +15,18 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
 
   const zones = [
     { 
-      id: "general", 
-      name: "GENERAL", 
-      price: 50, 
-      color: "#d4af37", 
+      id: "campo", 
+      name: "CAMPO", 
+      price: 150.00, 
+      color: "#4CAF50", 
       available: true,
-      capacity: "Capacidad: 2,500",
-      description: "Vista panorámica del estadio"
+      capacity: "Capacidad: 500",
+      description: "Zona de pie cerca del campo"
     },
     { 
       id: "occidente-baja", 
       name: "OCCIDENTE BAJA", 
-      price: 40, 
+      price: 100.00, 
       color: "#dc143c", 
       available: true,
       capacity: "Capacidad: 1,200", 
@@ -35,7 +35,7 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
     { 
       id: "occidente-alta", 
       name: "OCCIDENTE ALTA", 
-      price: 30, 
+      price: 80.00, 
       color: "#8b0000", 
       available: true,
       capacity: "Capacidad: 800",
@@ -44,7 +44,7 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
     { 
       id: "oriente-baja", 
       name: "ORIENTE BAJA", 
-      price: 25, 
+      price: 60.00, 
       color: "#daa520", 
       available: true,
       capacity: "Capacidad: 1,200",
@@ -53,7 +53,7 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
     { 
       id: "oriente-alta", 
       name: "ORIENTE ALTA", 
-      price: 25, 
+      price: 50.00, 
       color: "#f4a460", 
       available: false, // Agotado como en la imagen
       capacity: "AGOTADO",
@@ -62,7 +62,7 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
     { 
       id: "norte", 
       name: "NORTE", 
-      price: 15, 
+      price: 40.00, 
       color: "#b22222", 
       available: true,
       capacity: "Capacidad: 3,000",
@@ -71,12 +71,13 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
     { 
       id: "sur", 
       name: "SUR", 
-      price: 15, 
+      price: 40.00, 
       color: "#ff6347", 
       available: true,
       capacity: "Capacidad: 3,000", 
       description: "Tribuna sur popular"
     },
+
   ];
 
   const handleZoneClick = (zone: any) => {
@@ -252,21 +253,21 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
                   OCCIDENTE ALTA
                 </text>
 
-                {/* General - Zona superior */}
+                {/* Campo - Zona superior */}
                 <path 
                   d="M 80 30 Q 300 10 520 30 L 520 60 Q 300 40 80 60 Z" 
-                  fill={getZoneById('general')?.color}
+                  fill={getZoneById('campo')?.color}
                   stroke="#fff" 
                   strokeWidth="2"
                   className={`cursor-pointer transition-all duration-200 ${
-                    hoveredZone === 'general' ? 'opacity-90 filter brightness-110' : 'opacity-80'
+                    hoveredZone === 'campo' ? 'opacity-90 filter brightness-110' : 'opacity-80'
                   }`}
-                  onClick={() => handleZoneClick(getZoneById('general'))}
-                  onMouseEnter={() => setHoveredZone('general')}
+                  onClick={() => handleZoneClick(getZoneById('campo'))}
+                  onMouseEnter={() => setHoveredZone('campo')}
                   onMouseLeave={() => setHoveredZone(null)}
                 />
                 <text x="300" y="50" textAnchor="middle" className="fill-white text-sm font-bold pointer-events-none">
-                  GENERAL
+                  CAMPO
                 </text>
               </svg>
               
@@ -305,10 +306,13 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
                         className="w-4 h-4 rounded"
                         style={{ backgroundColor: zone.color }}
                       />
-                      <span className="font-semibold text-sm">{zone.name}</span>
+                      <div>
+                        <span className="font-semibold text-sm">{zone.name}</span>
+
+                      </div>
                     </div>
                     {zone.available ? (
-                      <span className="text-lg font-bold">S/{zone.price}.00</span>
+                      <span className="text-lg font-bold">S/{zone.price.toFixed(2)}</span>
                     ) : (
                       <Badge variant="destructive" className="text-xs">AGOTADO</Badge>
                     )}
@@ -322,6 +326,8 @@ export const StadiumSeatMap = ({ eventName, onSeatSelect }: StadiumSeatMapProps)
                   )}
                 </div>
               ))}
+              
+
             </CardContent>
           </Card>
 

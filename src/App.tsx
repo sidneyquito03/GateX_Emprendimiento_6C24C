@@ -18,6 +18,8 @@ import { PurchaseDetail } from "./pages/PurchaseDetail";
 import Settings from "./pages/Settings";
 import RoleSelection from "./pages/RoleSelection";
 import CreateEvent from "./pages/CreateEvent";
+import ResellerProfile from "./pages/ResellerProfile";
+import TicketView from "./pages/TicketView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,11 +41,18 @@ const App = () => (
           <Route path="/organizer" element={<Organizer />} />
           <Route path="/create-event" element={<CreateEvent />} />
           <Route path="/resale" element={<Resale />} />
+          <Route path="/resale/:id" element={<Resale />} />
+          <Route path="/ticket/:id" element={<TicketView />} />
           <Route path="/reseller" element={<ResellerDashboard />} />
           <Route path="/reseller-comparison" element={<ResellerComparison />} />
           <Route path="/profile" element={<UserProfile />} />
+          <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/purchase/:id" element={<PurchaseDetail />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/revendedor/:id" element={<ResellerProfile />} />
+          <Route path="/revendedor" element={<ResellerProfile />} />
+          <Route path="/resellerProfile/:id" element={<ResellerProfile />} />
+          <Route path="/resellerProfile" element={<ResellerProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

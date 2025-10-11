@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useParams, useNavigate } from "react-router-dom";
 import { 
   Calendar, 
   MapPin, 
@@ -17,10 +18,12 @@ import {
   Eye,
   Ticket as TicketIcon,
   Receipt,
-  FileText
+  FileText,
+  AlertCircle
 } from "lucide-react";
-import { getTickets, getTransactions } from "@/lib/localStorage";
-import { useParams, useNavigate } from "react-router-dom";
+import { getTickets, getTransactions, saveRating, getUserProfile, getTicketRating } from "@/lib/localStorage";
+import { RatingModal } from "@/components/RatingModal";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PurchaseDetails {
   id: string;
@@ -43,13 +46,19 @@ interface PurchaseDetails {
 }
 
 export const PurchaseDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{id: string}>();
   const navigate = useNavigate();
   const [purchase, setPurchase] = useState<PurchaseDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    loadPurchaseDetails();
+    if (id) {
+      loadPurchaseDetails();
+      checkIfUserHasRated();
+    }
   }, [id]);
 
   const loadPurchaseDetails = () => {
@@ -86,6 +95,20 @@ export const PurchaseDetail = () => {
         }
       });
     }
+  };
+
+  const checkIfUserHasRated = () => {
+    if (!id) return;
+    
+    // Verificar si ya hay una calificación para este ticket
+    const rating = getTicketRating(id);
+    if (rating) {
+      console.log("✅ Ya existe una calificación para este ticket:", rating);
+      setHasRated(true);
+    } else {
+      console.log("ℹ️ No hay calificaciones para este ticket");
+      setHasRated(false);
+    }
     setLoading(false);
   };
 
@@ -118,6 +141,45 @@ export const PurchaseDetail = () => {
 
   const handleResell = () => {
     navigate('/resale', { state: { ticketId: purchase?.id } });
+  };
+  
+  const handleRateEvent = () => {
+    setShowRatingModal(true);
+  };
+  
+  const handleSubmitRating = (rating: number, comment: string) => {
+    if (!id || !purchase) return;
+    
+    const user = getUserProfile();
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Debes iniciar sesión para calificar un evento",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Guardar la calificación
+    const newRating = {
+      id: `rating_${Date.now()}`,
+      eventName: purchase.eventName,
+      userId: user.id,
+      ticketId: id,
+      rating,
+      comment,
+      date: new Date().toISOString()
+    };
+    
+    saveRating(newRating);
+    setHasRated(true);
+    setShowRatingModal(false);
+    
+    toast({
+      title: "¡Gracias por tu calificación!",
+      description: `Has calificado "${purchase.eventName}" con ${rating} estrellas.`,
+      variant: "default"
+    });
   };
 
   if (loading) {
@@ -305,9 +367,23 @@ export const PurchaseDetail = () => {
                   </Button>
                 )}
                 
-                <Button variant="outline" className="w-full">
-                  <Star className="h-4 w-4 mr-2" />
-                  Calificar Evento
+                <Button 
+                  variant={hasRated ? "secondary" : "outline"}
+                  className="w-full" 
+                  onClick={handleRateEvent}
+                  disabled={hasRated}
+                >
+                  {hasRated ? (
+                    <>
+                      <Star className="h-4 w-4 mr-2 fill-yellow-400" />
+                      Evento Calificado
+                    </>
+                  ) : (
+                    <>
+                      <Star className="h-4 w-4 mr-2" />
+                      Calificar Evento
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -412,6 +488,16 @@ export const PurchaseDetail = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Componente de Rating */}
+          {purchase && (
+            <RatingModal
+              open={showRatingModal}
+              onClose={() => setShowRatingModal(false)}
+              eventName={purchase.eventName}
+              onSubmit={handleSubmitRating}
+            />
+          )}
         </div>
       </main>
 

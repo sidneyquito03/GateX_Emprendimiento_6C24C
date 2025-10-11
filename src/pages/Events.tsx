@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { getAllEvents, getResaleOffers } from "@/lib/localStorage";
+import { getAllEvents, getResaleOffers, initializeSampleResaleOffers, initializeAllEvents, forceUpdateAllData } from "@/lib/localStorage";
 
 const Events = () => {
   const navigate = useNavigate();
@@ -18,6 +18,12 @@ const Events = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    // Inicializar todos los 15 eventos
+    initializeAllEvents();
+    
+    // Inicializar datos de prueba de ofertas de reventa
+    initializeSampleResaleOffers();
+    
     loadEvents();
     loadResaleOffers();
   }, []);
@@ -25,11 +31,18 @@ const Events = () => {
   const loadEvents = () => {
     const allEvents = getAllEvents();
     // Transformar eventos para mostrar información adicional
-    const eventsWithInfo = allEvents.map(event => ({
-      ...event,
-      availableTickets: event.zones.reduce((sum, zone) => sum + zone.available, 0),
-      minPrice: Math.min(...event.zones.map(zone => zone.price))
-    }));
+    const eventsWithInfo = allEvents.map(event => {
+      // Filtrar solo zonas con entradas disponibles para calcular el precio mínimo
+      const availableZones = event.zones.filter(zone => zone.available > 0);
+      
+      return {
+        ...event,
+        availableTickets: event.zones.reduce((sum, zone) => sum + zone.available, 0),
+        minPrice: availableZones.length > 0 ? 
+          Math.min(...availableZones.map(zone => parseFloat(String(zone.price || 0)))) : 
+          event.zones.length > 0 ? Math.min(...event.zones.map(zone => parseFloat(String(zone.price || 0)))) : 0
+      };
+    });
     setEvents(eventsWithInfo);
   };
 
@@ -43,6 +56,8 @@ const Events = () => {
       resalePrice: offer.resalePrice,
       sellerRating: 4.8, // Por defecto
       increment: `+${offer.priceIncrease.toFixed(1)}%`,
+      // Usamos un sellerId fijo para esta demo, pero en una app real vendría del usuario que creó la oferta
+      sellerId: "reseller",
     }));
     setResaleOffers(resaleTickets);
   };
@@ -89,6 +104,25 @@ const Events = () => {
             </TabsList>
 
             <TabsContent value="events">
+              <div className="mb-6 flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {filteredEvents.length} eventos disponibles
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Limpiar completamente el localStorage de GateX
+                    localStorage.clear();
+                    // Forzar recarga completa
+                    window.location.reload();
+                  }}
+                  className="text-xs bg-red-50 border-red-200 hover:bg-red-100 text-red-700"
+                >
+                  🔄 FORZAR ACTUALIZACIÓN
+                </Button>
+              </div>
+              
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredEvents.map((event, index) => (
                   <div
@@ -103,10 +137,13 @@ const Events = () => {
 
             <TabsContent value="resale">
               <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20 animate-fade-in-up">
-                <p className="text-sm text-foreground/80">
-                  <strong>Reventa Justa:</strong> Todos los tickets están limitados a un máximo de +5% sobre el precio original.
-                  Tu pago estará en custodia hasta que el Smart Contract confirme la transferencia del ticket.
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-foreground/80">
+                    <strong>Reventa Justa:</strong> Todos los tickets están limitados a un máximo de +5% sobre el precio original.
+                    Tu pago estará en custodia hasta que GateX confirme la transferencia del ticket.
+                  </p>
+
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -137,7 +174,20 @@ const Events = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-                        <span>Revendedor verificado</span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/resellerProfile/${ticket.sellerId || 'reseller'}`);
+                          }}
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
+                        >
+                          <img 
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${ticket.id}`} 
+                            alt="Vendedor" 
+                            className="w-4 h-4 rounded-full" 
+                          />
+                          <span>Revendedor verificado</span>
+                        </button>
                         <span className="text-success">★ {ticket.sellerRating}</span>
                       </div>
                     </div>
@@ -145,13 +195,13 @@ const Events = () => {
                     <Button 
                       variant="hero" 
                       className="w-full"
-                      onClick={() => navigate(`/event/${ticket.id}`)}
+                      onClick={() => navigate(`/ticket/${ticket.id}`)}
                     >
-                      Comprar en Reventa
+                      Ver Ticket
                     </Button>
 
                     <p className="text-xs text-center text-muted-foreground">
-                      Pago protegido por Smart Contract
+                      Pago protegido por GateX
                     </p>
                   </Card>
                 ))}

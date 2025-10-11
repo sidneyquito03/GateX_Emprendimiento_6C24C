@@ -5,15 +5,31 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, CheckCircle, X } from "lucide-react";
 
 interface SeatSelectionProps {
-  zoneName: string;
-  zonePrice: number;
-  onBack: () => void;
-  onConfirmSelection: (seats: string[], totalPrice: number) => void;
+  zoneName?: string;
+  zonePrice?: number;
+  onBack?: () => void;
+  onConfirmSelection?: (seats: string[], totalPrice: number) => void;
+  onlyView?: boolean;
+  eventName?: string;
+  initialZone?: string;
+  userRole?: 'fan' | 'reseller' | 'organizer';
 }
 
-export const SeatSelection = ({ zoneName, zonePrice, onBack, onConfirmSelection }: SeatSelectionProps) => {
+export const SeatSelection = ({ 
+  zoneName, 
+  zonePrice, 
+  onBack, 
+  onConfirmSelection, 
+  onlyView = false,
+  eventName = "Final Copa América 2025",
+  initialZone = "OCCIDENTE ALTA",
+  userRole = 'fan'
+}: SeatSelectionProps) => {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [seatQuantity, setSeatQuantity] = useState<number>(1);
+
+  // Definir límite máximo según el rol
+  const maxTickets = userRole === 'reseller' ? 8 : 5; // Revendedor: 8, Fan: 5
 
   const [occupiedSeats] = useState(() => {
     const occupied = new Set<string>();
@@ -44,21 +60,31 @@ export const SeatSelection = ({ zoneName, zonePrice, onBack, onConfirmSelection 
 
   const totalPrice = selectedSeats.length * zonePrice;
 
+  // Usar valores predeterminados si estamos en modo vista o no se proporcionan
+  const displayedZoneName = zoneName || initialZone;
+  const displayedZonePrice = zonePrice || (initialZone === 'OCCIDENTE ALTA' ? 30 : initialZone === 'OCCIDENTE BAJA' ? 40 : 25);
+  
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
+          {!onlyView && onBack && (
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Button>
+          )}
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold">{zoneName}</h2>
-            <p className="text-sm text-muted-foreground">Selecciona tus asientos específicos</p>
+            <h2 className="text-xl sm:text-2xl font-bold">
+              {onlyView ? eventName : displayedZoneName}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {onlyView ? `Zona: ${displayedZoneName}` : "Selecciona tus asientos específicos"}
+            </p>
           </div>
         </div>
         <Badge className="text-base sm:text-lg px-3 py-2">
-          S/ {zonePrice} por asiento
+          S/ {displayedZonePrice} por asiento
         </Badge>
       </div>
 
@@ -154,14 +180,14 @@ export const SeatSelection = ({ zoneName, zonePrice, onBack, onConfirmSelection 
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setSeatQuantity(Math.min(seatQuantity + 1, 8))}
-                  disabled={seatQuantity >= 8}
+                  onClick={() => setSeatQuantity(Math.min(seatQuantity + 1, maxTickets))}
+                  disabled={seatQuantity >= maxTickets}
                 >
                   +
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                Máximo 8 asientos por compra
+                Máximo {maxTickets} asientos por compra {userRole === 'reseller' ? '(Revendedor)' : '(Fan)'}
               </p>
             </CardContent>
           </Card>
@@ -194,7 +220,7 @@ export const SeatSelection = ({ zoneName, zonePrice, onBack, onConfirmSelection 
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
-                  <span>S/ {totalPrice}</span>
+                  <span>S/ {totalPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Comisión:</span>
@@ -224,22 +250,23 @@ export const SeatSelection = ({ zoneName, zonePrice, onBack, onConfirmSelection 
         </div>
       </div>
 
-      <div className="sticky bottom-0 bg-background border-t pt-4">
-        <Button 
-          className={
-            "w-full text-white font-bold " + 
-            (selectedSeats.length > 0 && selectedSeats.length === seatQuantity
-              ? "bg-green-600 hover:bg-green-700" 
-              : "bg-gray-400 cursor-not-allowed")
-          }
-          size="lg"
-          disabled={selectedSeats.length === 0 || selectedSeats.length !== seatQuantity}
-          onClick={() => {
-            if (selectedSeats.length === seatQuantity) {
-              onConfirmSelection(selectedSeats, totalPrice * 1.05);
+      {!onlyView && (
+        <div className="sticky bottom-0 bg-background border-t pt-4">
+          <Button 
+            className={
+              "w-full text-white font-bold " + 
+              (selectedSeats.length > 0 && selectedSeats.length === seatQuantity
+                ? "bg-green-600 hover:bg-green-700" 
+                : "bg-gray-400 cursor-not-allowed")
             }
-          }}
-        >
+            size="lg"
+            disabled={selectedSeats.length === 0 || selectedSeats.length !== seatQuantity}
+            onClick={() => {
+              if (selectedSeats.length === seatQuantity && onConfirmSelection) {
+                onConfirmSelection(selectedSeats, totalPrice * 1.05);
+              }
+            }}
+          >
           {selectedSeats.length === 0 
             ? "🎫 Selecciona tus asientos primero"
             : selectedSeats.length !== seatQuantity
@@ -248,6 +275,7 @@ export const SeatSelection = ({ zoneName, zonePrice, onBack, onConfirmSelection 
           }
         </Button>
       </div>
+      )}
     </div>
   );
 };

@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Search, 
@@ -49,8 +51,8 @@ interface Reseller {
 }
 
 export const ResellerComparison = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEvent, setSelectedEvent] = useState("all");
   const [sortBy, setSortBy] = useState("rating");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedReseller, setSelectedReseller] = useState<Reseller | null>(null);
@@ -62,18 +64,27 @@ export const ResellerComparison = () => {
       rating: 4.8,
       totalSales: 2500,
       verification: 'verified',
-      specialization: ['Deportes', 'Conciertos', 'Teatro'],
+      specialization: ['Fútbol', 'Básquet', 'Tenis'],
       location: "Lima, Perú",
       responseTime: "< 5 min",
       successRate: 98.5,
       tickets: [
         {
           id: "t1",
-          eventName: "Alianza Lima vs Universitario",
-          zone: "Oriente Alta",
-          originalPrice: 80,
-          resalePrice: 120,
-          markup: 50,
+          eventName: "Final Copa América 2025",
+          zone: "Occidente Baja",
+          originalPrice: 100,
+          resalePrice: 105,
+          markup: 5.0,
+          condition: 'excellent'
+        },
+        {
+          id: "t1b",
+          eventName: "Eliminatorias Mundial: Perú vs Brasil",
+          zone: "Norte",
+          originalPrice: 40,
+          resalePrice: 42,
+          markup: 5.0,
           condition: 'excellent'
         }
       ],
@@ -88,19 +99,28 @@ export const ResellerComparison = () => {
       rating: 4.6,
       totalSales: 1800,
       verification: 'verified',
-      specialization: ['Conciertos', 'Festivales'],
+      specialization: ['Fútbol', 'Voleibol'],
       location: "Lima, Perú",
       responseTime: "< 10 min",
       successRate: 96.2,
       tickets: [
         {
           id: "t2",
-          eventName: "Alianza Lima vs Universitario",
-          zone: "Oriente Alta", 
-          originalPrice: 80,
-          resalePrice: 110,
-          markup: 37.5,
+          eventName: "Clásico Universitario vs Alianza",
+          zone: "Oriente Baja", 
+          originalPrice: 60,
+          resalePrice: 62.70,
+          markup: 4.5,
           condition: 'good'
+        },
+        {
+          id: "t2b",
+          eventName: "NBA Preseason: Heat vs Lakers",
+          zone: "Preferente",
+          originalPrice: 200,
+          resalePrice: 210,
+          markup: 5.0,
+          condition: 'excellent'
         }
       ],
       reviews: [
@@ -114,24 +134,208 @@ export const ResellerComparison = () => {
       rating: 4.3,
       totalSales: 950,
       verification: 'pending',
-      specialization: ['Deportes'],
+      specialization: ['Fútbol', 'Atletismo'],
       location: "Lima, Perú", 
       responseTime: "< 15 min",
       successRate: 94.1,
       tickets: [
         {
           id: "t3",
-          eventName: "Alianza Lima vs Universitario",
-          zone: "Oriente Alta",
-          originalPrice: 80,
-          resalePrice: 95,
-          markup: 18.8,
+          eventName: "Copa Libertadores: Universitario vs River",
+          zone: "Sur",
+          originalPrice: 50,
+          resalePrice: 51.50,
+          markup: 3.0,
           condition: 'fair'
+        },
+        {
+          id: "t3b",
+          eventName: "Maratón Internacional Lima 2025",
+          zone: "General",
+          originalPrice: 40,
+          resalePrice: 41.20,
+          markup: 3.0,
+          condition: 'good'
         }
       ],
       reviews: [
         { rating: 4, comment: "Precios competitivos", date: "2025-10-02" },
         { rating: 4, comment: "Buen trato al cliente", date: "2025-09-29" }
+      ]
+    },
+    {
+      id: "4",
+      name: "SportsMaster Peru",
+      rating: 4.7,
+      totalSales: 1200,
+      verification: 'verified',
+      specialization: ['Fútbol', 'Tenis', 'Básquet'],
+      location: "Lima, Perú",
+      responseTime: "< 8 min",
+      successRate: 97.1,
+      tickets: [
+        {
+          id: "t4",
+          eventName: "Final Copa América 2025",
+          zone: "Norte",
+          originalPrice: 40,
+          resalePrice: 42,
+          markup: 5.0,
+          condition: 'excellent'
+        },
+        {
+          id: "t4b",
+          eventName: "NBA Preseason: Heat vs Lakers",
+          zone: "General Baja",
+          originalPrice: 120,
+          resalePrice: 126,
+          markup: 5.0,
+          condition: 'excellent'
+        }
+      ],
+      reviews: [
+        { rating: 5, comment: "Especialistas en eventos deportivos", date: "2025-10-04" },
+        { rating: 4, comment: "Muy profesionales y puntuales", date: "2025-10-01" }
+      ]
+    },
+    {
+      id: "5",
+      name: "ProTickets Deportivos",
+      rating: 4.5,
+      totalSales: 1600,
+      verification: 'verified',
+      specialization: ['Voleibol', 'Atletismo', 'Surf'],
+      location: "Lima, Perú",
+      responseTime: "< 12 min",
+      successRate: 95.8,
+      tickets: [
+        {
+          id: "t5",
+          eventName: "Liga Nacional de Voleibol - Final",
+          zone: "Tribuna VIP",
+          originalPrice: 150,
+          resalePrice: 157.5,
+          markup: 5.0,
+          condition: 'excellent'
+        },
+        {
+          id: "t5b",
+          eventName: "Sudamericano de Surf Lima 2025",
+          zone: "VIP Beach Club",
+          originalPrice: 80,
+          resalePrice: 84,
+          markup: 5.0,
+          condition: 'good'
+        }
+      ],
+      reviews: [
+        { rating: 5, comment: "Excelente para deportes diversos", date: "2025-10-05" },
+        { rating: 4, comment: "Buenos precios en eventos especiales", date: "2025-09-28" }
+      ]
+    },
+    {
+      id: "6",
+      name: "EliteScore Lima",
+      rating: 4.4,
+      totalSales: 800,
+      verification: 'verified',
+      specialization: ['Fútbol', 'Maratón'],
+      location: "Lima, Perú",
+      responseTime: "< 15 min",
+      successRate: 93.7,
+      tickets: [
+        {
+          id: "t6",
+          eventName: "Eliminatorias Mundial: Perú vs Brasil",
+          zone: "Occidente Baja",
+          originalPrice: 100,
+          resalePrice: 105,
+          markup: 5.0,
+          condition: 'excellent'
+        },
+        {
+          id: "t6b",
+          eventName: "Maratón Internacional Lima 2025",
+          zone: "Elite",
+          originalPrice: 60,
+          resalePrice: 63,
+          markup: 5.0,
+          condition: 'good'
+        }
+      ],
+      reviews: [
+        { rating: 4, comment: "Precios justos en eliminatorias", date: "2025-10-03" },
+        { rating: 5, comment: "Especialistas en maratones", date: "2025-09-26" }
+      ]
+    },
+    {
+      id: "7",
+      name: "SuperDeporte Plus",
+      rating: 4.7,
+      totalSales: 2200,
+      verification: 'verified',
+      specialization: ['Fútbol', 'Básquet', 'Tenis'],
+      location: "Lima, Perú",
+      responseTime: "< 5 min",
+      successRate: 97.8,
+      tickets: [
+        {
+          id: "t7a",
+          eventName: "Clásico Real Madrid vs Barcelona",
+          zone: "Tribuna Norte",
+          originalPrice: 180,
+          resalePrice: 185,
+          markup: 2.8,
+          condition: 'excellent'
+        },
+        {
+          id: "t7b", 
+          eventName: "US Open Tenis - Semifinal",
+          zone: "Court Central",
+          originalPrice: 150,
+          resalePrice: 165,
+          markup: 10.0,
+          condition: 'excellent'
+        }
+      ],
+      reviews: [
+        { rating: 5, comment: "Rápidos y confiables, mejores precios", date: "2025-10-08" },
+        { rating: 5, comment: "Excelente atención al cliente", date: "2025-10-01" }
+      ]
+    },
+    {
+      id: "8",
+      name: "TicketMaster Sport",
+      rating: 4.2,
+      totalSales: 1500,
+      verification: 'verified',
+      specialization: ['Voleibol', 'Atletismo', 'Natación'],
+      location: "Callao, Perú",
+      responseTime: "< 8 min",
+      successRate: 94.5,
+      tickets: [
+        {
+          id: "t8a",
+          eventName: "Campeonato Mundial Voleibol",
+          zone: "Platea Baja",
+          originalPrice: 85,
+          resalePrice: 88,
+          markup: 3.5,
+          condition: 'good'
+        },
+        {
+          id: "t8b",
+          eventName: "Mundial de Natación Lima 2025",
+          zone: "Tribuna VIP",
+          originalPrice: 120,
+          resalePrice: 132,
+          markup: 10.0,
+          condition: 'excellent'
+        }
+      ],
+      reviews: [
+        { rating: 4, comment: "Buenos precios para deportes acuáticos", date: "2025-09-30" },
+        { rating: 4, comment: "Especialistas en atletismo", date: "2025-09-25" }
       ]
     }
   ]);
@@ -194,20 +398,18 @@ export const ResellerComparison = () => {
                   />
                 </div>
               </div>
-              <div className="flex gap-3">
-                <select 
-                  className="px-3 py-2 border rounded-md"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <option value="rating">Mejor calificación</option>
-                  <option value="price">Menor precio</option>
-                  <option value="sales">Más ventas</option>
-                </select>
-                <Button onClick={() => setShowPaymentModal(true)}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Métodos de Pago
-                </Button>
+              
+              <div className="flex gap-2">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Ordenar por..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rating">Mejor calificación</SelectItem>
+                    <SelectItem value="price">Menor precio</SelectItem>
+                    <SelectItem value="sales">Más ventas</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -222,30 +424,49 @@ export const ResellerComparison = () => {
                   {/* Información del revendedor */}
                   <div className="md:col-span-1">
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-lg font-semibold">{reseller.name}</h3>
-                      {getVerificationIcon(reseller.verification)}
+                      <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shadow-sm">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{reseller.name}</h3>
+                        <span className="inline-flex items-center gap-1 bg-opacity-10 px-2 py-0.5 rounded-full" 
+                              style={{
+                                backgroundColor: reseller.verification === 'verified' ? 'rgba(34, 197, 94, 0.15)' : 
+                                                reseller.verification === 'pending' ? 'rgba(234, 179, 8, 0.15)' : 
+                                                'rgba(239, 68, 68, 0.15)'
+                              }}>
+                          {getVerificationIcon(reseller.verification)}
+                          <span className={`text-xs font-medium
+                            ${reseller.verification === 'verified' ? 'text-green-600' : 
+                              reseller.verification === 'pending' ? 'text-yellow-600' : 
+                              'text-red-600'}`}>
+                            {reseller.verification === 'verified' ? 'Verificado' : 
+                             reseller.verification === 'pending' ? 'Verificación pendiente' : 'No verificado'}
+                          </span>
+                        </span>
+                      </div>
                     </div>
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 text-yellow-500" />
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                         <span className="font-medium">{reseller.rating}</span>
-                        <span className="text-muted-foreground">({reseller.totalSales} ventas)</span>
+                        <span className="text-muted-foreground">({reseller.totalSales.toLocaleString()} ventas)</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
+                        <MapPin className="h-4 w-4 text-primary/70" />
                         <span>{reseller.location}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                        <Clock className="h-4 w-4 text-primary/70" />
                         <span>Responde en {reseller.responseTime}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <span>{reseller.successRate}% éxito</span>
+                        <span className="text-green-600 font-medium">{reseller.successRate}% éxito</span>
                       </div>
                     </div>
 
@@ -260,36 +481,41 @@ export const ResellerComparison = () => {
 
                   {/* Tickets disponibles */}
                   <div className="md:col-span-1">
-                    <h4 className="font-medium mb-3">Tickets Disponibles</h4>
+                    <h4 className="font-medium mb-3 text-base">Tickets Disponibles</h4>
                     <div className="space-y-3">
                       {reseller.tickets.map((ticket) => (
-                        <Card key={ticket.id} className="border border-border/50">
+                        <Card key={ticket.id} className="border border-primary/20 hover:border-primary/40 transition-colors shadow-sm">
                           <CardContent className="p-4">
-                            <div className="space-y-2">
-                              <h5 className="font-medium text-sm">{ticket.eventName}</h5>
-                              <p className="text-sm text-muted-foreground">{ticket.zone}</p>
-                              
+                            <div className="space-y-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <span className="text-lg font-bold text-primary">
-                                    S/ {ticket.resalePrice}
-                                  </span>
-                                  <div className="text-xs text-muted-foreground">
-                                    Precio original: S/ {ticket.originalPrice}
-                                  </div>
-                                </div>
-                                <Badge className={`text-xs ${getConditionColor(ticket.condition)}`}>
-                                  {ticket.condition}
+                                <h5 className="font-medium">{ticket.eventName}</h5>
+                                <Badge className={`${getConditionColor(ticket.condition)} font-medium`}>
+                                  {ticket.condition === 'excellent' ? 'Excelente' : 
+                                   ticket.condition === 'good' ? 'Bueno' : 'Regular'}
                                 </Badge>
                               </div>
                               
-                              {ticket.markup > 0 && (
-                                <div className="text-xs">
-                                  <span className={ticket.markup > 40 ? 'text-red-500' : 'text-orange-500'}>
-                                    +{ticket.markup.toFixed(1)}% sobre precio original
+                              <p className="text-sm font-medium text-primary/80">{ticket.zone}</p>
+                              
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-xl font-bold text-primary">
+                                    S/ {ticket.resalePrice.toFixed(2)}
                                   </span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-sm text-muted-foreground line-through">
+                                      S/ {ticket.originalPrice.toFixed(2)}
+                                    </span>
+                                    {ticket.markup > 0 && (
+                                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                                        ticket.markup > 5 ? 'bg-red-100 text-red-700' : 
+                                        'bg-green-100 text-green-700'}`}>
+                                        +{ticket.markup.toFixed(1)}%
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -300,12 +526,28 @@ export const ResellerComparison = () => {
                   {/* Acciones y reseñas */}
                   <div className="md:col-span-1">
                     <div className="space-y-4">
-                      <Button className="w-full" onClick={() => setSelectedReseller(reseller)}>
-                        Ver Perfil Completo
+                      {/* Botones con alto contraste y efecto de hover mejorado */}
+                      <Button 
+                        className="w-full bg-cyan-600 text-white font-medium shadow-md hover:bg-cyan-700 hover:shadow-lg transition-all py-6"
+                        onClick={() => {
+                          setSelectedReseller(reseller);
+                          navigate(`/resellerProfile/${reseller.id}`);
+                        }}
+                      >
+                        <span className="text-base">Ver Perfil Completo</span>
                       </Button>
                       
-                      <Button variant="outline" className="w-full">
-                        Contactar Revendedor
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-2 border-cyan-500 text-cyan-600 font-medium hover:bg-cyan-50 transition-colors py-6"
+                        onClick={() => {
+                          // Contactar al revendedor
+                          setSelectedReseller(reseller);
+                          // Podemos abrir un chat en la app o enviar un email
+                          navigate(`/resellerProfile/${reseller.id}?action=contact`);
+                        }}
+                      >
+                        <span className="text-base">Contactar Revendedor</span>
                       </Button>
                       
                       <div>
@@ -356,10 +598,10 @@ export const ResellerComparison = () => {
               <div>
                 <h4 className="font-medium mb-2">⚠️ Señales de alerta:</h4>
                 <ul className="space-y-1 text-muted-foreground">
-                  <li>• Precios demasiado altos (+50% del original)</li>
+                  <li>• Precios mayores al 5% del valor original</li>
                   <li>• Pocas reseñas o muy antiguas</li>
                   <li>• Sin verificación o verificación pendiente</li>
-                  <li>• Condición del ticket "fair" o inferior</li>
+                  <li>• Condición del ticket "regular" o inferior</li>
                 </ul>
               </div>
             </div>

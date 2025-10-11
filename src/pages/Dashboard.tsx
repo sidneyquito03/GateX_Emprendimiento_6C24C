@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Wallet, TrendingUp, Clock, CheckCircle2, User, Shield, Search, ShoppingBag } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { getTickets, getUserStats, getUserProfile, getUserBalance } from "@/lib/localStorage";
+import { getTickets, getUserStats, getUserProfile, getUserBalance, createDemoTickets } from "@/lib/localStorage";
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -23,12 +22,25 @@ const Dashboard = () => {
   const [currentRole, setCurrentRole] = useState<string>("");
 
   useEffect(() => {
+    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+    const userRole = localStorage.getItem("userRole");
+    
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+    
+    // El dashboard del fan funciona para cualquier rol autenticado
+    // Crear tickets de demostración
+    createDemoTickets();
+    
     loadUserData();
-  }, []);
+  }, [navigate]);
 
   const loadUserData = () => {
     // Cargar tickets del usuario
     const userTickets = getTickets();
+    console.log("Tickets cargados:", userTickets);
     setTickets(userTickets);
     
     // Cargar estadísticas del usuario
@@ -48,13 +60,13 @@ const Dashboard = () => {
     {
       icon: Wallet,
       label: "Mi Saldo",
-      value: `S/${userStats.userBalance || 0}`,
+      value: `S/${(userStats.userBalance || 0).toFixed(2)}`,
       color: "text-success",
     },
     {
       icon: Clock,
       label: "Fondos en Custodia",
-      value: `S/${userStats.fundsInCustody}`,
+      value: `S/${userStats.fundsInCustody.toFixed(2)}`,
       color: "text-accent",
     },
     {
@@ -71,8 +83,12 @@ const Dashboard = () => {
     },
   ] : [];
 
-  const handleResell = () => {
-    window.location.href = "/resale";
+  const handleResell = (ticketId?: string) => {
+    // Si tenemos un ID específico de ticket, lo pasamos como parámetro a localStorage
+    if (ticketId) {
+      localStorage.setItem('selectedTicketForResale', ticketId);
+    }
+    navigate("/resale");
   };
 
   return (
@@ -180,36 +196,43 @@ const Dashboard = () => {
             </div>
             
             <div className="grid md:grid-cols-2 gap-6">
-              {tickets.map((ticket, index) => (
-                <div
-                  key={ticket.id}
-                  style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-                >
-                  <TicketCard
-                    {...ticket}
-                    onViewDetails={() => {
-                      navigate(`/purchase/${ticket.id}`);
-                    }}
-                    onViewQR={() => {
-                      setSelectedTicket({
-                        id: ticket.id,
-                        eventName: ticket.eventName,
-                        zone: ticket.zone,
-                        date: ticket.eventDate,
-                        price: ticket.price
-                      });
-                      setShowQR(true);
-                    }}
-                    onResell={() => {
-                      toast({
-                        title: "Redirigiendo a reventa",
-                        description: "Te llevamos a la página de reventa de tickets",
-                      });
-                      navigate("/resale");
-                    }}
-                  />
+              {tickets.length > 0 ? (
+                tickets.map((ticket, index) => (
+                  <div
+                    key={ticket.id}
+                    style={{ animationDelay: `${0.4 + index * 0.1}s` }}
+                  >
+                    <TicketCard
+                      {...ticket}
+                      onViewDetails={() => {
+                        navigate(`/purchase/${ticket.id}`);
+                      }}
+                      onViewQR={() => {
+                        setSelectedTicket({
+                          id: ticket.id,
+                          eventName: ticket.eventName,
+                          zone: ticket.zone,
+                          date: ticket.eventDate,
+                          price: ticket.price
+                        });
+                        setShowQR(true);
+                      }}
+                      onResell={() => {
+                        toast({
+                          title: "Redirigiendo a reventa",
+                          description: "Te llevamos a la página de reventa de tickets",
+                        });
+                        handleResell(ticket.id);
+                      }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="md:col-span-2 py-12 text-center">
+                  <p className="text-muted-foreground mb-4">No tienes tickets activos</p>
+                  <Button variant="outline" onClick={() => navigate('/events')}>Explorar eventos</Button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

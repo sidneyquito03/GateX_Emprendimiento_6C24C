@@ -34,9 +34,9 @@ const Auth = () => {
         // Crear perfil básico si no existe
         profile = {
           id: "user_" + Date.now(),
-          name: "Usuario GateX",
-          email: email || "usuario@gatex.com",
-          phone: "+51 900 000 000",
+          name: email ? email.split('@')[0] : "Usuario",
+          email: email,
+          phone: "",
           picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || 'default'}`,
           authProvider: "email",
           createdAt: new Date().toISOString(),
@@ -68,9 +68,9 @@ const Auth = () => {
       // Crear perfil de usuario para registro normal
       const userProfile: UserProfile = {
         id: "user_" + Date.now(),
-        name: name || "Usuario GateX",
-        email: email || "usuario@gatex.com",
-        phone: "+51 900 000 000", // Número por defecto peruano
+        name: name || (email ? email.split('@')[0] : "Usuario"),
+        email: email,
+        phone: "", // El usuario podrá completarlo más tarde
         picture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email || 'default'}`, // Avatar generado
         authProvider: "email",
         createdAt: new Date().toISOString(),
@@ -327,7 +327,7 @@ const Auth = () => {
                     id="name"
                     name="name"
                     type="text"
-                    placeholder="Juan Pérez"
+                    placeholder="Ingresa tu nombre completo"
                     className="pl-10"
                     required
                   />

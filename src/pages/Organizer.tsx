@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, DollarSign, Users, Lock, Plus, BarChart3, Edit, Trash2, Eye, Shield, Activity, Star, UserCheck, UserX, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -22,12 +22,24 @@ import { getUserEvents, getAllEvents, deleteEvent, updateEvent, getTransactions 
 
 const Organizer = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
 
   useEffect(() => {
+    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+    const userRole = localStorage.getItem("userRole");
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+    if (userRole !== 'organizer') {
+      navigate("/role-selection");
+      return;
+    }
+    
     loadData();
   }, []);
 
@@ -143,12 +155,11 @@ const Organizer = () => {
 
           {/* Tabs Content */}
           <Tabs defaultValue="my-events" className="w-full animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="my-events">Mis Eventos</TabsTrigger>
               <TabsTrigger value="all-events">Todos los Eventos</TabsTrigger>
               <TabsTrigger value="users-analytics">Analytics Usuarios</TabsTrigger>
               <TabsTrigger value="resellers">Revendedores</TabsTrigger>
-              <TabsTrigger value="create">Crear Evento</TabsTrigger>
             </TabsList>
 
             {/* Mis Eventos */}
@@ -496,24 +507,7 @@ const Organizer = () => {
               </div>
             </TabsContent>
 
-            {/* Crear Evento */}
-            <TabsContent value="create">
-              <Card className="glass-card p-6">
-                <div className="text-center py-8">
-                  <Plus className="h-16 w-16 text-primary mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Crear Nuevo Evento</h2>
-                  <p className="text-muted-foreground mb-6">
-                    Como organizador verificado, puedes crear eventos deportivos con zonas personalizadas
-                  </p>
-                  <Link to="/create-event">
-                    <Button size="lg" className="px-8">
-                      <Plus className="mr-2 h-5 w-5" />
-                      Ir a Crear Evento
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            </TabsContent>
+
           </Tabs>
         </div>
       </main>

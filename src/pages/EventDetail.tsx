@@ -68,13 +68,17 @@ const EventDetail = () => {
         category: "deportivo", // Marcador de que es evento deportivo
         sport: "fútbol",
         zones: [
-          { name: "GENERAL", price: 50, available: 2500 },
-          { name: "OCCIDENTE ALTA", price: 40, available: 800 },
-          { name: "OCCIDENTE BAJA", price: 30, available: 1200 },
-          { name: "ORIENTE ALTA", price: 25, available: 0 }, // Agotado
-          { name: "ORIENTE BAJA", price: 25, available: 1200 },
-          { name: "NORTE", price: 15, available: 3000 },
-          { name: "SUR", price: 15, available: 3000 },
+          { name: "GENERAL", price: 50.00, available: 2500 },
+          { name: "OCCIDENTE ALTA", price: 30.00, available: 800 },
+          { name: "OCCIDENTE BAJA", price: 40.00, available: 1200 },
+          { name: "ORIENTE ALTA", price: 25.00, available: 0 }, // Agotado
+          { name: "ORIENTE BAJA", price: 25.00, available: 1200 },
+          { name: "NORTE", price: 15.00, available: 3000 },
+          { name: "SUR", price: 15.00, available: 3000 },
+          // Opciones adicionales que no están en el mapa
+          { name: "PALCO VIP", price: 175.00, available: 250 },
+          { name: "PLATEA CENTRAL", price: 80.00, available: 500 },
+          { name: "CORNER VIP", price: 65.00, available: 300 },
         ],
       });
     }
@@ -388,6 +392,7 @@ const EventDetail = () => {
                 <SeatSelection
                   zoneName={selectedZone!}
                   zonePrice={selectedPrice}
+                  userRole={userRole as 'fan' | 'reseller' | 'organizer'}
                   onBack={() => {
                     setShowSeatSelection(false);
                     setSelectedZone(null);
@@ -429,54 +434,9 @@ const EventDetail = () => {
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-800 text-sm flex items-center gap-2">
                 <span className="text-lg">⚽</span>
-                <strong>EVENTO DEPORTIVO:</strong> Selecciona tu zona en el mapa interactivo del estadio o usa las opciones directas abajo. 
+                <strong>EVENTO DEPORTIVO:</strong> Selecciona tu zona directamente en el mapa interactivo del estadio. 
                 Todos los eventos en GateX son deportivos con selección de asientos específicos.
               </p>
-            </div>
-            
-
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              {event.zones.map((zone, index) => (
-                <Card key={index} className={`glass-card p-6 glow-on-hover ${zone.available === 0 ? 'opacity-60' : ''}`}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
-                        {zone.name}
-                        {zone.available === 0 && (
-                          <Badge variant="destructive" className="text-xs">AGOTADO</Badge>
-                        )}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {zone.available === 0 
-                          ? "No hay tickets disponibles"
-                          : `${zone.available} tickets disponibles`
-                        }
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">S/{zone.price}</p>
-                      <p className="text-xs text-muted-foreground">por ticket</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="hero" 
-                    className="w-full"
-                    disabled={zone.available === 0}
-                    onClick={() => {
-                      // TODOS los eventos en GateX son deportivos - usar mapa interactivo
-                      setSelectedZone(zone.name);
-                      setSelectedPrice(zone.price);
-                      setShowSeatSelection(true);
-                    }}
-                  >
-                    {zone.available === 0 
-                      ? "Agotado" 
-                      : "Seleccionar Asientos"
-                    }
-                  </Button>
-                </Card>
-              ))}
             </div>
           </div>
         </div>

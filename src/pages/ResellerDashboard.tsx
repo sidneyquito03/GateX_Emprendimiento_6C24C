@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, DollarSign, Package, Plus, Info, BarChart3, Users, Settings, Zap, Target, Globe, CreditCard } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TransactionStatus } from "@/components/TransactionStatus";
 import { PaymentMethodsModal } from "@/components/PaymentMethodsModal";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,89 +30,304 @@ import {
   sellResaleTicket, 
   cancelResaleOffer, 
   getUserBalance,
-  updateResaleOffer
+  updateResaleOffer,
+  recordSale,
+  getSalesHistory
 } from "@/lib/localStorage";
 
 const ResellerDashboard = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [showEditPrice, setShowEditPrice] = useState(false);
   const [showInterested, setShowInterested] = useState(false);
-  const [showResponseDialog, setShowResponseDialog] = useState(false);
+  const [showRespondModal, setShowRespondModal] = useState(false);
   const [selectedOfferId, setSelectedOfferId] = useState<string>("");
-  const [selectedPerson, setSelectedPerson] = useState<any>(null);
+  const [selectedBuyer, setSelectedBuyer] = useState<any>(null);
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [editingOffer, setEditingOffer] = useState<any>(null);
   const [newPrice, setNewPrice] = useState<number>(0);
   const [priceIncrease, setPriceIncrease] = useState([2.5]);
   const [selectedTicket, setSelectedTicket] = useState<string>("");
   const [availableTickets, setAvailableTickets] = useState<any[]>([]);
+  
+  // Verificar que el usuario esté autenticado
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+    const userRole = localStorage.getItem("userRole");
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+    if (userRole !== 'reseller') {
+      navigate("/role-selection");
+      return;
+    }
+  }, []);
   const [activeOffers, setActiveOffers] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
+  const [salesHistory, setSalesHistory] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("offers");
+  const [showSaleDetails, setShowSaleDetails] = useState(false);
+  const [selectedSale, setSelectedSale] = useState<any>(null);
 
   useEffect(() => {
     loadData();
+    
+    // Inicializar datos de ejemplo si no existen
+    initializeExampleData();
   }, []);
+  
+  // Función para inicializar datos de ejemplo en localStorage
+  const initializeExampleData = () => {
+    try {
+      // Verificar si ya existen ofertas de reventa
+      const existingOffers = getResaleOffers();
+      
+      if (existingOffers.length === 0) {
+        // Crear ofertas de ejemplo y guardarlas en localStorage
+        const exampleOffers = [
+          {
+            id: "rev_001",
+            ticketId: "ticket_001",
+            eventName: "Universitario vs Sporting Cristal",
+            zone: "Tribuna Norte - Fila 15",
+            originalPrice: 85,
+            resalePrice: 89.25,
+            priceIncrease: 5.0,
+            status: "active" as const,
+            listedDate: new Date().toISOString()
+          },
+          {
+            id: "rev_002",
+            ticketId: "ticket_002", 
+            eventName: "Alianza Lima vs Sport Boys",
+            zone: "Occidente Alta - Fila 8",
+            originalPrice: 120,
+            resalePrice: 126,
+            priceIncrease: 5.0,
+            status: "active" as const,
+            listedDate: new Date().toISOString()
+          }
+        ];
+        
+        localStorage.setItem("resale_offers", JSON.stringify(exampleOffers));
+        console.log("✅ Datos de ejemplo inicializados correctamente");
+      }
+    } catch (error) {
+      console.error("Error al inicializar datos de ejemplo:", error);
+    }
+  };
 
   const loadData = () => {
-    // Cargar tickets disponibles para reventa (en custodia)
-    const tickets = getTickets().filter(t => t.status === "custody");
-    setAvailableTickets(tickets);
+    console.log("⚙️ Cargando datos del dashboard...");
     
-    // Cargar ofertas activas - agregar datos de ejemplo si no hay
-    let offers = getResaleOffers().filter(o => o.status === "active");
-    
-    // Si no hay ofertas, agregar ejemplos para demostración
-    if (offers.length === 0) {
-      offers = [
-        {
-          id: "rev_001",
-          ticketId: "ticket_001",
-          eventName: "Universitario vs Sporting Cristal",
-          zone: "Tribuna Norte - Fila 15",
-          originalPrice: 85,
-          resalePrice: 89.25,
-          priceIncrease: 5.0,
-          status: "active" as const,
-          listedDate: new Date().toISOString()
-        },
-        {
-          id: "rev_002",
-          ticketId: "ticket_002", 
-          eventName: "Alianza Lima vs Sport Boys",
-          zone: "Occidente Alta - Fila 8",
-          originalPrice: 120,
-          resalePrice: 126,
-          priceIncrease: 5.0,
-          status: "active" as const,
-          listedDate: new Date().toISOString()
-        }
-      ];
+    try {
+      // Cargar todos los tickets
+      const allTickets = getTickets();
+      console.log("🎫 Todos los tickets:", allTickets);
+      
+      // Separar los tickets en custodia para revender
+      const ticketsInCustody = allTickets.filter(t => t.status === "custody");
+      setAvailableTickets(ticketsInCustody);
+      console.log(`📦 Tickets disponibles para revender: ${ticketsInCustody.length}`);
+      
+      // Cargar ofertas activas
+      const offers = getResaleOffers().filter(o => o.status === "active");
+      console.log(`🏷️ Ofertas activas: ${offers.length}`);
+      
+      // Enriquecer las ofertas con información adicional
+      const ticketsInResale = allTickets.filter(t => t.status === "resale");
+      console.log(`🔄 Tickets en reventa: ${ticketsInResale.length}`);
+      
+      setActiveOffers(offers);
+      
+      // Cargar historial de ventas
+      const history = getSalesHistory();
+      
+      // Si no hay historial, crear datos de ejemplo
+      if (history.length === 0) {
+        const exampleSales = [
+          {
+            id: "1",
+            eventName: "Eliminatorias Mundial 2026",
+            zone: "OCCIDENTE BAJA",
+            soldPrice: 131.25,
+            commission: 6.56,
+            date: "18 Abril 2025",
+            status: "completed",
+            buyer: {
+              name: "Carlos Mendoza",
+              email: "carlos.mendoza@gmail.com",
+              phone: "+51 987 654 321",
+              dni: "12345678",
+              rating: 4.8
+            },
+            saleId: "SALE_001",
+            originalPrice: 125.00,
+            paymentMethod: "Tarjeta Visa",
+            transferCompleted: true
+          },
+          {
+            id: "2",
+            eventName: "Copa Libertadores Final",
+            zone: "NORTE",
+            soldPrice: 84.00,
+            commission: 4.20,
+            date: "12 Abril 2025",
+            status: "completed",
+            buyer: {
+              name: "Ana García López",
+              email: "ana.garcia@outlook.com",
+              phone: "+51 912 345 678",
+              dni: "87654321",
+              rating: 4.9
+            },
+            saleId: "SALE_002",
+            originalPrice: 80.00,
+            paymentMethod: "Yape",
+            transferCompleted: true
+          },
+          {
+            id: "3",
+            eventName: "Alianza Lima vs Universitario",
+            zone: "SUR",
+            soldPrice: 42.00,
+            commission: 2.10,
+            date: "28 Marzo 2025",
+            status: "completed",
+            buyer: {
+              name: "Luis Torres Vargas",
+              email: "luis.torres@hotmail.com",
+              phone: "+51 965 432 109",
+              dni: "11223344",
+              rating: 4.7
+            },
+            saleId: "SALE_003",
+            originalPrice: 40.00,
+            paymentMethod: "Plin",
+            transferCompleted: true
+          }
+        ];
+        
+        localStorage.setItem("reseller_sales_history", JSON.stringify(exampleSales));
+        setSalesHistory(exampleSales);
+      } else {
+        setSalesHistory(history);
+      }
+      
+      // Cargar estadísticas
+      const stats = getUserStats();
+      setUserStats(stats);
+      console.log("📊 Estadísticas cargadas:", stats);
+      
+      console.log("✅ Datos cargados correctamente");
+    } catch (error) {
+      console.error("❌ Error al cargar datos:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar correctamente los datos",
+        variant: "destructive"
+      });
     }
-    
-    setActiveOffers(offers);
-    
-    // Cargar estadísticas
-    const stats = getUserStats();
-    setUserStats(stats);
   };
 
   // Función para vender directamente
   const handleSellOffer = (offerId: string) => {
-    const success = sellResaleTicket(offerId);
-
-    if (success) {
+    console.log("🛒 Iniciando proceso de venta para oferta:", offerId);
+    
+    // Verificar que tengamos un ID válido
+    if (!offerId) {
+      console.error("❌ ID de oferta no válido");
       toast({
-        title: "¡Venta exitosa!",
-        description: "El saldo ha sido agregado a tu cuenta.",
-        variant: "default", // Cambiado a un valor permitido
+        title: "Error en la venta",
+        description: "ID de oferta no válido",
+        variant: "destructive",
       });
-      loadData();
+      return;
+    }
+    
+    // Encontrar la oferta en el estado actual
+    const offerToSell = activeOffers.find(o => o.id === offerId);
+    console.log("🎫 Datos de la oferta a vender:", offerToSell);
+    
+    // Para efectos de demo, continuamos aunque la oferta no se encuentre
+    if (!offerToSell) {
+      console.warn("⚠️ Oferta no encontrada en el estado local, intentando procesar de todas formas");
+      toast({
+        title: "Procesando venta...",
+        description: "Verificando datos del ticket",
+      });
     } else {
+      // Mostrar un estado de carga
+      toast({
+        title: "Procesando venta...",
+        description: "Por favor espera mientras procesamos la venta",
+      });
+    }
+    
+    // Intentar procesar la venta
+    try {
+      console.log("⚙️ Ejecutando función sellResaleTicket con ID:", offerId);
+      const success = sellResaleTicket(offerId);
+      console.log("✅ Resultado de la venta:", success);
+
+      if (success) {
+        // Seleccionar un comprador real aleatorio para venta directa
+        const randomBuyer = realBuyers[Math.floor(Math.random() * realBuyers.length)];
+        
+        const buyerInfo = {
+          name: randomBuyer.name,
+          email: randomBuyer.email,
+          phone: randomBuyer.phone,
+          dni: randomBuyer.dni,
+          rating: randomBuyer.rating,
+          preferredPayment: randomBuyer.preferredPayment
+        };
+        
+        // Registrar la venta con información del comprador
+        if (offerToSell) {
+          recordSale({
+            id: `sale_${Date.now()}`,
+            eventName: offerToSell.eventName,
+            zone: offerToSell.zone || "Zona General",
+            soldPrice: offerToSell.resalePrice,
+            commission: offerToSell.resalePrice * 0.05,
+            originalPrice: offerToSell.originalPrice,
+            paymentMethod: buyerInfo.preferredPayment,
+            buyer: buyerInfo
+          });
+        }
+        
+        // Actualizar la interfaz de usuario quitando la oferta vendida
+        setActiveOffers(prev => prev.filter(o => o.id !== offerId));
+        
+        // Precio a mostrar (con fallback si no tenemos los datos)
+        const priceToShow = offerToSell ? offerToSell.resalePrice.toFixed(2) : "-.--";
+        
+        // Notificar éxito
+        toast({
+          title: "¡Venta exitosa!",
+          description: `Has vendido el ticket a ${buyerInfo.name} por S/${priceToShow}. El saldo ha sido agregado a tu cuenta.`,
+        });
+        
+        // Recargar datos
+        console.log("🔄 Recargando datos después de la venta exitosa");
+        loadData();
+      } else {
+        console.error("❌ La venta no se completó correctamente");
+        toast({
+          title: "Error al vender",
+          description: "No se pudo completar la venta. Por favor, verifica la conexión e intenta nuevamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error al procesar la venta:", error);
       toast({
         title: "Error al vender",
-        description: "No se pudo completar la venta. Intenta nuevamente.",
+        description: "Ocurrió un error inesperado. Intenta nuevamente.",
         variant: "destructive",
       });
     }
@@ -190,49 +405,169 @@ const ResellerDashboard = () => {
   const handleShowInterested = (offerId: string) => {
     setSelectedOfferId(offerId);
     setShowInterested(true);
+    // Al abrir el modal de interesados, reseteamos cualquier estado previo
+    setSelectedBuyer(null);
+    setResponseMessage("");
+    setShowRespondModal(false);
   };
+
+  // Base de datos de compradores reales con información completa
+  const realBuyers = [
+    {
+      name: "Carlos Mendoza",
+      email: "carlos.mendoza@gmail.com",
+      phone: "+51 987 654 321",
+      dni: "12345678",
+      rating: 4.8,
+      preferredPayment: "Yape"
+    },
+    {
+      name: "Ana García López",
+      email: "ana.garcia@outlook.com", 
+      phone: "+51 912 345 678",
+      dni: "87654321",
+      rating: 4.9,
+      preferredPayment: "Plin"
+    },
+    {
+      name: "Luis Torres Vargas",
+      email: "luis.torres@hotmail.com",
+      phone: "+51 965 432 109", 
+      dni: "11223344",
+      rating: 4.7,
+      preferredPayment: "Tarjeta Visa"
+    },
+    {
+      name: "María González",
+      email: "maria.gonzalez@gmail.com",
+      phone: "+51 934 567 890",
+      dni: "22334455",
+      rating: 4.6,
+      preferredPayment: "Tarjeta Mastercard"
+    },
+    {
+      name: "Pedro Castillo",
+      email: "pedro.castillo@gmail.com",
+      phone: "+51 911 814 374",
+      dni: "60783376", 
+      rating: 4.8,
+      preferredPayment: "Yape"
+    }
+  ];
 
   // Función para vender directamente a un interesado
   const handleSellToInterested = (buyerName: string, offerId: string) => {
-    const offer = activeOffers.find(o => o.id === offerId);
-    if (!offer) return;
-
-    // Usar la función de localStorage para procesar la venta
-    const success = sellResaleTicket(offerId);
+    console.log("🛒 Iniciando venta a interesado:", { buyerName, offerId });
     
-    if (success) {
-      // Remover la oferta de las activas en la UI
-      const updatedOffers = activeOffers.filter(o => o.id !== offerId);
-      setActiveOffers(updatedOffers);
-      
-      // Cerrar modales
-      setShowInterested(false);
-      
-      // Mostrar confirmación de venta
-      toast({
-        title: "¡Venta exitosa!",
-        description: `Has vendido tu ticket a ${buyerName} por S/${offer.resalePrice.toFixed(2)}. El saldo ha sido agregado a tu cuenta.`,
-      });
-
-      // Actualizar estadísticas
-      loadData();
-    } else {
+    // Verificar datos
+    if (!offerId || !buyerName) {
+      console.error("❌ Información incompleta para venta:", { buyerName, offerId });
       toast({
         title: "Error en la venta",
-        description: "No se pudo completar la venta. Inténtalo de nuevo.",
+        description: "Información incompleta para procesar la venta",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Buscar la oferta
+    const offer = activeOffers.find(o => o.id === offerId);
+    console.log("🎫 Oferta encontrada:", offer);
+    
+    // Para efectos de demo, continuamos aunque la oferta no se encuentre
+    if (!offer) {
+      console.warn("⚠️ Oferta no encontrada en el estado local, intentando procesar de todas formas");
+      toast({
+        title: "Procesando venta...",
+        description: `Vendiendo ticket a ${buyerName} (verificando datos)`,
+      });
+    } else {
+      // Mostrar estado de carga
+      toast({
+        title: "Procesando venta...",
+        description: `Vendiendo ticket a ${buyerName}`,
+      });
+    }
+
+    try {
+      // Usar la función de localStorage para procesar la venta
+      console.log("⚙️ Ejecutando función sellResaleTicket con ID:", offerId);
+      const success = sellResaleTicket(offerId);
+      console.log("✅ Resultado de la venta:", success);
+      
+      if (success) {
+        // Buscar información real del comprador
+        const realBuyer = realBuyers.find(buyer => buyer.name === buyerName);
+        
+        const buyerInfo = realBuyer || {
+          name: buyerName,
+          email: `${buyerName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+          phone: `+51 9${Math.floor(10000000 + Math.random() * 90000000)}`,
+          dni: `${Math.floor(10000000 + Math.random() * 90000000)}`,
+          rating: Math.round((4.5 + Math.random() * 0.5) * 10) / 10,
+          preferredPayment: ["Yape", "Plin", "Tarjeta Visa", "Tarjeta Mastercard"][Math.floor(Math.random() * 4)]
+        };
+        
+        // Registrar la venta con información del comprador
+        if (offer) {
+          recordSale({
+            id: `sale_${Date.now()}`,
+            eventName: offer.eventName,
+            zone: offer.zone || "Zona General",
+            soldPrice: offer.resalePrice,
+            commission: offer.resalePrice * 0.05,
+            originalPrice: offer.originalPrice,
+            paymentMethod: buyerInfo.preferredPayment,
+            buyer: buyerInfo
+          });
+        }
+        
+        // Remover la oferta de las activas en la UI
+        const updatedOffers = activeOffers.filter(o => o.id !== offerId);
+        setActiveOffers(updatedOffers);
+        
+        // Cerrar modales
+        setShowInterested(false);
+        
+        // Precio a mostrar (con fallback si no tenemos los datos)
+        const priceToShow = offer ? offer.resalePrice.toFixed(2) : "-.--";
+        
+        // Mostrar confirmación de venta
+        toast({
+          title: "¡Venta exitosa!",
+          description: `Has vendido tu ticket a ${buyerName} por S/${priceToShow}. El saldo ha sido agregado a tu cuenta.`,
+        });
+
+        // Actualizar estadísticas
+        console.log("🔄 Recargando datos después de la venta exitosa");
+        loadData();
+      } else {
+        console.error("❌ La venta no se completó correctamente");
+        toast({
+          title: "Error en la venta",
+          description: "No se pudo completar la venta. El sistema no pudo procesar la transacción.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error al vender a interesado:", error);
+      toast({
+        title: "Error en la venta",
+        description: "Ocurrió un error inesperado. Intenta nuevamente.",
         variant: "destructive"
       });
     }
   };
 
-  // Función para abrir el diálogo de respuesta
-  const handleOpenResponse = (person: any) => {
-    setSelectedPerson(person);
+  // Función para responder a un interesado
+  const handleRespondToBuyer = (buyer: any) => {
+    setSelectedBuyer(buyer);
     setResponseMessage("");
-    setShowResponseDialog(true);
+    setShowRespondModal(true);
+    // Mantenemos abierto el modal de interesados para poder ver ambas opciones
   };
 
-  // Función para enviar respuesta
+  // Función para enviar la respuesta
   const handleSendResponse = () => {
     if (!responseMessage.trim()) {
       toast({
@@ -244,11 +579,13 @@ const ResellerDashboard = () => {
     }
 
     toast({
-      title: "Respuesta enviada",
-      description: `Tu mensaje ha sido enviado a ${selectedPerson?.name}.`,
+      title: "Mensaje enviado",
+      description: `Tu respuesta ha sido enviada a ${selectedBuyer?.name}.`,
     });
 
-    setShowResponseDialog(false);
+    setResponseMessage("");
+    setShowRespondModal(false);
+    // No cerramos el modal principal de interesados para mantener la navegación
   };
 
   const stats = userStats ? [
@@ -267,22 +604,12 @@ const ResellerDashboard = () => {
     {
       icon: DollarSign,
       label: "Fondos en Custodia",
-      value: `S/${userStats.fundsInCustody}`,
+      value: `S/${userStats.fundsInCustody.toFixed(2)}`,
       color: "text-accent",
     },
   ] : [];
 
-  const salesHistory = [
-    {
-      id: "1",
-      eventName: "Eliminatorias Mundial 2026",
-      zone: "Tribuna Lateral",
-      soldPrice: 131.25,
-      commission: 6.56,
-      date: "18 Abril 2025",
-      status: "completed",
-    },
-  ];
+
 
   const calculatePrices = (basePrice: number, increase: number) => {
     const resalePrice = basePrice * (1 + increase / 100);
@@ -425,7 +752,7 @@ const ResellerDashboard = () => {
           {/* Main Content */}
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <Tabs defaultValue="offers" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-6">
                   <TabsTrigger value="offers">Mis Ofertas</TabsTrigger>
                   <TabsTrigger value="create">Crear Oferta</TabsTrigger>
@@ -489,7 +816,7 @@ const ResellerDashboard = () => {
                           </div>
                         </div>
                         
-                        <div className="flex gap-3 mt-4">
+                        <div className="flex flex-wrap gap-3 mt-4">
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -501,6 +828,7 @@ const ResellerDashboard = () => {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="flex-1"
                             onClick={() => handleEditPrice(offer)}
                           >
                             Editar Precio
@@ -508,14 +836,19 @@ const ResellerDashboard = () => {
                           <Button 
                             variant="default" 
                             size="sm"
-                            onClick={() => handleSellOffer(offer.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevenir propagación del evento
+                              console.log("🖱️ Botón 'Vender' clickeado para la oferta:", offer.id);
+                              handleSellOffer(offer.id);
+                            }}
                           >
                             Vender
                           </Button>
                           <Button 
                             variant="destructive" 
                             size="sm"
+                            className="flex-1"
                             onClick={() => handleCancelOffer(offer.id)}
                           >
                             Cancelar
@@ -660,28 +993,95 @@ const ResellerDashboard = () => {
 
                 {/* Historial */}
                 <TabsContent value="history" className="space-y-4">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-2">Historial de Ventas</h2>
+                    <p className="text-muted-foreground">Detalles completos de tus transacciones completadas</p>
+                  </div>
+                  
                   {salesHistory.map((sale, index) => (
                     <Card
                       key={sale.id}
-                      className="glass-card p-6 animate-fade-in-up"
+                      className="glass-card p-6 animate-fade-in-up border-l-4 border-l-success"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Información del Evento */}
                         <div>
-                          <h3 className="font-semibold text-lg mb-1">{sale.eventName}</h3>
-                          <p className="text-sm text-muted-foreground">{sale.zone}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{sale.date}</p>
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h3 className="font-semibold text-lg mb-1 text-primary">{sale.eventName}</h3>
+                              <p className="text-sm font-medium text-muted-foreground">{sale.zone}</p>
+                              <p className="text-xs text-muted-foreground mt-1">📅 {sale.date}</p>
+                              <p className="text-xs text-muted-foreground">🆔 {sale.saleId}</p>
+                            </div>
+                            <Badge className="bg-success/20 text-success border-success">✅ Completada</Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Precio Original</p>
+                              <p className="text-sm font-semibold">S/{sale.originalPrice?.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Precio de Venta</p>
+                              <p className="text-lg font-bold text-primary">S/{sale.soldPrice.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Tu Comisión</p>
+                              <p className="text-lg font-bold text-success">S/{sale.commission.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Método de Pago</p>
+                              <p className="text-sm font-semibold">{sale.paymentMethod}</p>
+                            </div>
+                          </div>
                         </div>
-                        <Badge className="bg-success/20 text-success">Completada</Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Precio de Venta</p>
-                          <p className="text-lg font-bold">S/{sale.soldPrice}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Tu Comisión Recibida</p>
-                          <p className="text-lg font-bold text-success">S/{sale.commission}</p>
+
+                        {/* Información del Comprador */}
+                        <div className="bg-muted/30 rounded-lg p-4">
+                          <h4 className="font-semibold mb-3 flex items-center text-sm">
+                            👤 Información del Comprador
+                            <div className="ml-auto flex items-center gap-1">
+                              <span className="text-yellow-500">⭐</span>
+                              <span className="text-xs font-medium">{sale.buyer?.rating}</span>
+                            </div>
+                          </h4>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground min-w-[60px]">Nombre:</span>
+                              <span className="font-medium">{sale.buyer?.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground min-w-[60px]">Email:</span>
+                              <span className="font-mono text-xs">{sale.buyer?.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground min-w-[60px]">Teléfono:</span>
+                              <span className="font-mono text-xs">{sale.buyer?.phone}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground min-w-[60px]">DNI:</span>
+                              <span className="font-mono text-xs">{sale.buyer?.dni}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-success font-medium">✅ Transferencia Completada</span>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-xs h-7"
+                                onClick={() => {
+                                  setSelectedSale(sale);
+                                  setShowSaleDetails(true);
+                                }}
+                              >
+                                Ver Detalles
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -824,6 +1224,41 @@ const ResellerDashboard = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               <TransactionStatus status="custody" />
+
+              {/* Estadísticas de Compradores */}
+              <Card className="glass-card p-6">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Mis Compradores
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total vendido:</span>
+                    <span className="font-bold">{salesHistory.length} tickets</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Rating promedio:</span>
+                    <span className="font-bold flex items-center gap-1">
+                      {(salesHistory.reduce((acc, sale) => acc + (sale.buyer?.rating || 0), 0) / salesHistory.length).toFixed(1)}
+                      <span className="text-yellow-500">⭐</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Último comprador:</span>
+                    <span className="font-bold text-xs">{salesHistory[0]?.buyer?.name}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-3" 
+                    onClick={() => {
+                      setActiveTab("history");
+                    }}
+                  >
+                    Ver Todos los Compradores
+                  </Button>
+                </div>
+              </Card>
 
               <Card className="glass-card p-6">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -1006,13 +1441,68 @@ const ResellerDashboard = () => {
               Usuarios que han mostrado interés en tu oferta de reventa.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Mostramos el modal de respuesta junto con los interesados cuando está activo */}
+          {showRespondModal && selectedBuyer && (
+            <div className="mb-6 p-4 bg-muted/10 rounded-lg border border-primary/20">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedBuyer.name}`}
+                    alt={selectedBuyer.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <div>
+                    <p className="font-medium text-sm">{selectedBuyer.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedBuyer.time}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => setShowRespondModal(false)}
+                >
+                  &times;
+                </Button>
+              </div>
+              <div className="mb-3">
+                <p className="text-sm italic bg-muted/20 p-2 rounded-md">"{selectedBuyer.message}"</p>
+              </div>
+              <div className="space-y-2">
+                <Textarea 
+                  placeholder="Escribe tu respuesta aquí..."
+                  className="min-h-[80px] text-sm"
+                  value={responseMessage}
+                  onChange={(e) => setResponseMessage(e.target.value)}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowRespondModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant="hero"
+                    size="sm"
+                    onClick={handleSendResponse}
+                  >
+                    Enviar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {[
               { name: "Carlos Mendoza", rating: 4.8, message: "¿Está disponible para el partido de mañana?", time: "Hace 2 horas" },
-              { name: "Ana García", rating: 4.9, message: "Interesada en comprar. ¿Precio negociable?", time: "Hace 5 horas" },
-              { name: "Luis Torres", rating: 4.7, message: "¿Puedo ver el ticket antes de comprar?", time: "Hace 1 día" }
+              { name: "Ana García López", rating: 4.9, message: "Interesada en comprar. ¿Precio negociable?", time: "Hace 5 horas" },
+              { name: "Luis Torres Vargas", rating: 4.7, message: "¿Puedo ver el ticket antes de comprar?", time: "Hace 1 día" }
             ].map((person, index) => (
-              <Card key={index} className="p-4">
+              <Card key={index} className={`p-4 border-l-4 ${selectedBuyer?.name === person.name ? 'border-l-success bg-success/5' : 'border-l-primary'}`}>
                 <div className="flex items-start gap-3">
                   <img 
                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${person.name}`}
@@ -1027,17 +1517,19 @@ const ResellerDashboard = () => {
                     <p className="text-sm text-muted-foreground mb-2">{person.message}</p>
                     <p className="text-xs text-muted-foreground">{person.time}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 min-w-[180px]">
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => handleOpenResponse(person)}
+                      className="flex-1"
+                      onClick={() => handleRespondToBuyer(person)}
                     >
                       Responder
                     </Button>
                     <Button 
                       size="sm" 
                       variant="hero"
+                      className="flex-1"
                       onClick={() => handleSellToInterested(person.name, selectedOfferId)}
                     >
                       Vender
@@ -1050,63 +1542,70 @@ const ResellerDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal para Responder a Interesados */}
-      <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="max-w-lg">
+      {/* Modal de Detalles de Venta */}
+      <Dialog open={showSaleDetails} onOpenChange={setShowSaleDetails}>
+        <DialogContent className="max-w-md mx-auto bg-gradient-to-br from-blue-900/50 to-purple-900/50 backdrop-blur-sm border border-white/20 text-white">
           <DialogHeader>
-            <DialogTitle>Responder a {selectedPerson?.name}</DialogTitle>
-            <DialogDescription>
-              Envía un mensaje a la persona interesada en tu ticket.
-            </DialogDescription>
+            <DialogTitle className="text-xl font-bold text-center text-white">
+              Detalles de la Venta
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            {selectedPerson && (
-              <div className="p-4 bg-muted/20 rounded-lg space-y-2">
-                <div className="flex items-center gap-2">
-                  <img 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedPerson.name}`}
-                    alt={selectedPerson.name}
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium text-sm">{selectedPerson.name}</p>
-                    <p className="text-xs text-muted-foreground">{selectedPerson.time}</p>
-                  </div>
-                </div>
-                <div className="pl-10">
-                  <p className="text-sm italic">"{selectedPerson.message}"</p>
+          
+          {selectedSale && (
+            <div className="space-y-4">
+              {/* Información del Comprador */}
+              <div className="bg-white/10 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3">Información del Comprador</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-semibold">Nombre:</span> {selectedSale.buyerName}</p>
+                  <p><span className="font-semibold">Email:</span> {selectedSale.buyerEmail}</p>
+                  <p><span className="font-semibold">Teléfono:</span> {selectedSale.buyerPhone}</p>
+                  <p><span className="font-semibold">DNI:</span> {selectedSale.buyerDNI}</p>
                 </div>
               </div>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="response">Tu respuesta</Label>
-              <Textarea 
-                id="response"
-                placeholder="Escribe tu respuesta aquí..."
-                className="min-h-[120px]"
-                value={responseMessage}
-                onChange={(e) => setResponseMessage(e.target.value)}
-              />
+
+              {/* Detalles de la Transacción */}
+              <div className="bg-white/10 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3">Detalles de la Transacción</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-semibold">Evento:</span> {selectedSale.eventTitle}</p>
+                  <p><span className="font-semibold">Zona:</span> {selectedSale.zone}</p>
+                  <p><span className="font-semibold">Fecha de Venta:</span> {new Date(selectedSale.saleDate).toLocaleDateString()}</p>
+                  <p><span className="font-semibold">Precio de Venta:</span> ${selectedSale.salePrice.toLocaleString()}</p>
+                  <p><span className="font-semibold">Método de Pago:</span> {selectedSale.paymentMethod}</p>
+                </div>
+              </div>
+
+              {/* Estado de la Transferencia */}
+              <div className="bg-white/10 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-3">Estado de Transferencia</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Estado:</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    selectedSale.transferStatus === 'completed' 
+                      ? 'bg-green-500/20 text-green-300'
+                      : selectedSale.transferStatus === 'pending'
+                      ? 'bg-yellow-500/20 text-yellow-300'
+                      : 'bg-red-500/20 text-red-300'
+                  }`}>
+                    {selectedSale.transferStatus === 'completed' && 'Transferido'}
+                    {selectedSale.transferStatus === 'pending' && 'Pendiente'}
+                    {selectedSale.transferStatus === 'failed' && 'Falló'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botón de Cerrar */}
+              <div className="pt-4">
+                <Button 
+                  onClick={() => setShowSaleDetails(false)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                >
+                  Cerrar
+                </Button>
+              </div>
             </div>
-            
-            <div className="flex gap-3 pt-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setShowResponseDialog(false)}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                variant="hero" 
-                className="flex-1"
-                onClick={handleSendResponse}
-              >
-                Enviar Respuesta
-              </Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 

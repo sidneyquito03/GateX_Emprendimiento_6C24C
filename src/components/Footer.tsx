@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import gatexLogo from "@/assets/gatex-logo.png";
+import { TermsModal } from "@/components/modals/TermsModal";
+import { PrivacyModal } from "@/components/modals/PrivacyModal";
+import { FAQModal } from "@/components/modals/FAQModal";
 
 export const Footer = () => {
   return (
@@ -13,7 +16,7 @@ export const Footer = () => {
               <span className="text-xl font-bold text-gradient">GateX</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Tickets seguros y transparentes con tecnología blockchain
+              Tickets seguros y transparentes con verificación garantizada
             </p>
           </div>
 
@@ -42,19 +45,31 @@ export const Footer = () => {
             <h3 className="font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Términos y Condiciones
-                </a>
+                <TermsModal 
+                  trigger={
+                    <button className="text-muted-foreground hover:text-primary transition-colors text-sm text-left">
+                      Términos y Condiciones
+                    </button>
+                  }
+                />
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Política de Privacidad
-                </a>
+                <PrivacyModal 
+                  trigger={
+                    <button className="text-muted-foreground hover:text-primary transition-colors text-sm text-left">
+                      Política de Privacidad
+                    </button>
+                  }
+                />
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  FAQ
-                </a>
+                <FAQModal 
+                  trigger={
+                    <button className="text-muted-foreground hover:text-primary transition-colors text-sm text-left">
+                      FAQ
+                    </button>
+                  }
+                />
               </li>
             </ul>
           </div>

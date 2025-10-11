@@ -498,15 +498,6 @@ export const OrganizerVerification = ({ onSuccess, onCancel }: OrganizerVerifica
               </Button>
               <div className="flex gap-2">
                 <Button 
-                  onClick={() => {
-                    console.log("🧪 Botón de prueba directo");
-                    onSuccess();
-                  }}
-                  variant="secondary"
-                >
-                  Test Direct
-                </Button>
-                <Button 
                   onClick={handleSubmit}
                   className="bg-primary hover:bg-primary/90"
                 >

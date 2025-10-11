@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -15,7 +15,9 @@ import {
   Check,
   Bitcoin,
   DollarSign,
-  Smartphone
+  Smartphone,
+  AlertCircle,
+  LockKeyhole
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,14 +49,14 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
   ]);
 
   const [newCard, setNewCard] = useState({
-    number: '1234567890123456',
-    name: 'Juan Pérez',
-    expiry: '12/25',
-    cvv: '123'
+    number: '',
+    name: '',
+    expiry: '',
+    cvv: ''
   });
 
   const [newWallet, setNewWallet] = useState({
-    address: '0x742d35Cc6526C4532B10a7f7a88FF3C2A2B4B4B4',
+    address: '',
     type: 'metamask'
   });
 
@@ -86,14 +88,10 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
       description: "Tu método de pago ha sido agregado exitosamente",
     });
 
-    // Si estamos en proceso de compra, ofrecer pagar inmediatamente
+    // Si estamos en proceso de compra, procesar el pago inmediatamente
     if (onPaymentConfirmed) {
-      setTimeout(() => {
-        if (window.confirm("¿Deseas pagar ahora con esta tarjeta?")) {
-          onPaymentConfirmed();
-          onClose();
-        }
-      }, 1000);
+      onPaymentConfirmed();
+      onClose();
     }
   };
 
@@ -125,14 +123,10 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
       description: "Tu wallet ha sido conectada exitosamente",
     });
 
-    // Si estamos en proceso de compra, ofrecer pagar inmediatamente
+    // Si estamos en proceso de compra, procesar el pago inmediatamente
     if (onPaymentConfirmed) {
-      setTimeout(() => {
-        if (window.confirm("¿Deseas pagar ahora con esta wallet?")) {
-          onPaymentConfirmed();
-          onClose();
-        }
-      }, 1000);
+      onPaymentConfirmed();
+      onClose();
     }
   };
 
@@ -314,7 +308,7 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
                           <div>
                             <Label>Número de tarjeta</Label>
                             <Input 
-                              placeholder="1234 5678 9012 3456"
+                              placeholder="Ingresa el número de tu tarjeta"
                               value={newCard.number}
                               onChange={(e) => setNewCard({...newCard, number: e.target.value})}
                             />
@@ -322,7 +316,7 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
                           <div>
                             <Label>Nombre en la tarjeta</Label>
                             <Input 
-                              placeholder="Juan Pérez"
+                              placeholder="Introduce tu nombre completo"
                               value={newCard.name}
                               onChange={(e) => setNewCard({...newCard, name: e.target.value})}
                             />
@@ -338,7 +332,7 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
                           <div>
                             <Label>CVV</Label>
                             <Input 
-                              placeholder="123"
+                              placeholder="Código de seguridad"
                               type="password"
                               value={newCard.cvv}
                               onChange={(e) => setNewCard({...newCard, cvv: e.target.value})}
@@ -377,7 +371,7 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
                         <div>
                           <Label>Dirección de Wallet</Label>
                           <Input 
-                            placeholder="0x742d35Cc6526C4532B10a7f7a"
+                            placeholder="Ingresa la dirección de tu wallet"
                             value={newWallet.address}
                             onChange={(e) => setNewWallet({...newWallet, address: e.target.value})}
                           />
@@ -498,11 +492,11 @@ export const PaymentMethodsModal = ({ isOpen, onClose, userRole, onPaymentConfir
                           </div>
                           <div>
                             <Label>Número de Cuenta</Label>
-                            <Input placeholder="191-123456789-0-12" />
+                            <Input placeholder="Ingresa tu número de cuenta" />
                           </div>
                           <div>
                             <Label>Código CCI</Label>
-                            <Input placeholder="00219100123456789012" />
+                            <Input placeholder="Ingresa tu código interbancario" />
                           </div>
                         </div>
                         <Button className="w-full">

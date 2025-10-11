@@ -22,8 +22,11 @@ export const EventCard = ({
   availableTickets,
   minPrice 
 }: EventCardProps) => {
+  // Verificar si es el evento "Eliminatorias Mundial"
+  const isWorldCupQualifier = title.includes("Eliminatorias Mundial");
+  
   return (
-    <Card className="glass-card overflow-hidden group animate-fade-in-up hover:shadow-xl transition-all duration-300">
+    <Card className={`glass-card overflow-hidden group animate-fade-in-up hover:shadow-xl transition-all duration-300 ${isWorldCupQualifier ? 'border-blue-400 dark:border-blue-600' : ''}`}>
       <div className="relative h-48 overflow-hidden">
         <img 
           src={image} 
@@ -55,7 +58,7 @@ export const EventCard = ({
         <div className="flex items-center justify-between pt-4 border-t border-border/50">
           <div>
             <p className="text-sm text-muted-foreground">Desde</p>
-            <p className="text-xl font-bold text-primary">S/{minPrice}</p>
+            <p className="text-xl font-bold text-primary">S/{minPrice.toFixed(2)}</p>
           </div>
           <Link to={`/event/${id}`}>
             <Button variant="hero" size="sm">
@@ -63,6 +66,14 @@ export const EventCard = ({
             </Button>
           </Link>
         </div>
+        
+        {isWorldCupQualifier && (
+          <div className="mt-2 w-full py-1 px-2 bg-blue-100 dark:bg-blue-900/40 rounded text-center">
+            <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
+              ⚽ Evento Destacado
+            </span>
+          </div>
+        )}
       </div>
     </Card>
   );

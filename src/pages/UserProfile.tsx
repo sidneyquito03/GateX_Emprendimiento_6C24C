@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -32,11 +32,13 @@ import { getUserProfile, updateUserProfile } from "@/lib/localStorage";
 export const UserProfile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { id } = useParams(); // Capturar el ID del usuario/vendedor desde la URL
   const [userProfile, setUserProfile] = useState<any>(null);
   const [currentRole, setCurrentRole] = useState<string>("");
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(true); // Si estamos viendo nuestro propio perfil
 
   const [formData, setFormData] = useState({
     name: "",
@@ -62,23 +64,58 @@ export const UserProfile = () => {
     if (savedNotifications) {
       setNotifications(JSON.parse(savedNotifications));
     }
-  }, []);
+  }, [id]); // Re-cargar cuando cambia el ID en la URL
 
   const loadUserData = () => {
-    const profile = getUserProfile();
-    const role = localStorage.getItem("userRole") || "fan";
-    
-    if (profile) {
-      setUserProfile(profile);
-      setCurrentRole(role);
+    // Si hay un ID en la URL, estamos viendo el perfil de otro usuario
+    if (id) {
+      // En una app real, aquí cargaríamos los datos del usuario específico desde la API
+      // Para esta demo, usamos datos de ejemplo para el revendedor
+      setIsOwnProfile(false);
+      
+      // Datos de ejemplo para un revendedor
+      const resellerProfile = {
+        name: id === "reseller" ? "TicketsPro Lima" : `Revendedor ${id}`,
+        email: "contact@ticketspro.pe",
+        phone: "+51 987654321",
+        bio: "Revendedor verificado con más de 5 años de experiencia en venta de tickets deportivos y conciertos.",
+        location: "Lima, Perú",
+        profileImage: null,
+        rating: 4.8,
+        totalSales: 2500,
+        verification: 'verified',
+        specialization: ['Deportes', 'Conciertos', 'Teatro'],
+        successRate: 98.5,
+      };
+      
+      setUserProfile(resellerProfile);
+      setCurrentRole("reseller");
       setFormData({
-        name: profile.name || "",
-        email: profile.email || "",
-        phone: profile.phone || "",
-        bio: profile.bio || "",
-        location: profile.location || ""
+        name: resellerProfile.name,
+        email: resellerProfile.email,
+        phone: resellerProfile.phone,
+        bio: resellerProfile.bio,
+        location: resellerProfile.location
       });
-      setProfileImage(profile.profileImage || null);
+      setProfileImage(resellerProfile.profileImage);
+    } else {
+      // Si no hay ID, estamos viendo nuestro propio perfil
+      setIsOwnProfile(true);
+      const profile = getUserProfile();
+      const role = localStorage.getItem("userRole") || "fan";
+      
+      if (profile) {
+        setUserProfile(profile);
+        setCurrentRole(role);
+        setFormData({
+          name: profile.name || "",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          bio: profile.bio || "",
+          location: profile.location || ""
+        });
+        setProfileImage(profile.profileImage || null);
+      }
     }
   };
 
@@ -349,25 +386,51 @@ export const UserProfile = () => {
                       placeholder="Cuéntanos algo sobre ti..."
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      disabled={!isOwnProfile}
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleSave} className="flex-1">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Guardar Cambios
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        navigate("/dashboard");
-                        toast({
-                          title: "Ir al Dashboard",
-                          description: "Redirigiendo a tu panel principal...",
-                        });
-                      }}
-                    >
-                      Dashboard
-                    </Button>
+                    {isOwnProfile ? (
+                      <>
+                        <Button onClick={handleSave} className="flex-1">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Guardar Cambios
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            navigate("/dashboard");
+                            toast({
+                              title: "Ir al Dashboard",
+                              description: "Redirigiendo a tu panel principal...",
+                            });
+                          }}
+                        >
+                          Dashboard
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          className="flex-1"
+                          onClick={() => {
+                            navigate("/events");
+                            toast({
+                              title: "Ver eventos disponibles",
+                              description: "Explorando tickets en reventa de este vendedor...",
+                            });
+                          }}
+                        >
+                          Ver Eventos en Reventa
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => navigate(-1)}
+                        >
+                          Volver
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
