@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, User } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -8,6 +8,7 @@ import gatexLogo from "@/assets/gatex-logo.png";
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const navigate = useNavigate();
   const isAuth = localStorage.getItem("isAuthenticated") === "true";
   const userRole = localStorage.getItem("userRole") || "fan";
 
@@ -108,7 +109,7 @@ export const Navbar = () => {
                 )}
                 
                 {userProfile ? (
-                  <Link to="/user-profile" className="text-foreground/80 hover:text-primary transition-colors">
+                  <Link to="/dashboard" className="text-foreground/80 hover:text-primary transition-colors">
                     Mi Perfil
                   </Link>
                 ) : (
@@ -121,7 +122,7 @@ export const Navbar = () => {
                 </Link>
                 
                 <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={switchRole} className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="flex items-center gap-2">
                     {userProfile ? (
                       userProfile.profileImage || userProfile.picture ? (
                         <img 
