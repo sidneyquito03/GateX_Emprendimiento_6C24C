@@ -20,12 +20,28 @@ export interface Ticket {
   eventName: string;
   eventDate: string;
   zone: string;
-  status: "custody" | "released" | "resold" | "resale";
+  status: "custody" | "released" | "resold" | "resale" | "transferred";
   price: number;
   purchaseDate: string;
   seat?: string;
   date?: string;
   seatNumbers?: string[];
+  transferredTo?: string;
+  currentOwner?: {
+    name: string;
+    dni: string;
+    email: string;
+    phone: string;
+  };
+  transferInfo?: {
+    recipientName: string;
+    recipientLastName: string;
+    recipientDni: string;
+    recipientEmail: string;
+    recipientPhone: string;
+    transferDate: string;
+    originalOwner: any;
+  };
 }
 
 export interface Event {

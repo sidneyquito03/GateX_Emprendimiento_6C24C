@@ -287,8 +287,30 @@ export const generateTicketPDF = async (ticketData: TicketData): Promise<void> =
   }
 
   // Descargar PDF
-  const fileName = `GateX_Ticket_${ticketData.id}_${ticketData.eventName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-  pdf.save(fileName);
+  const cleanEventName = ticketData.eventName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+  const fileName = `GateX_Ticket_${ticketData.id}_${cleanEventName}.pdf`;
+  
+  try {
+    // Forzar descarga como PDF con tipo MIME correcto
+    const pdfOutput = pdf.output('blob');
+    const url = URL.createObjectURL(new Blob([pdfOutput], { type: 'application/pdf' }));
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Limpiar URL temporal
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  } catch (error) {
+    console.error('Error al descargar PDF:', error);
+    // Fallback al método original
+    pdf.save(fileName);
+  }
 };
 
 // Función para generar QR específico para PDF

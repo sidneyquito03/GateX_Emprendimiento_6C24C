@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { getTickets, getTransactions, saveRating, getUserProfile, getTicketRating } from "@/lib/localStorage";
 import { RatingModal } from "@/components/RatingModal";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { generateTicketPDF, generateQRForPDF, type TicketData } from "@/lib/pdfGenerator";
 
 interface PurchaseDetails {
   id: string;
@@ -32,7 +33,7 @@ interface PurchaseDetails {
   zone: string;
   price: number;
   purchaseDate: string;
-  status: 'active' | 'used' | 'cancelled' | 'resold';
+  status: 'active' | 'used' | 'cancelled' | 'resold' | 'transferred';
   qrCode: string;
   transactionId: string;
   paymentMethod: string;
@@ -42,6 +43,22 @@ interface PurchaseDetails {
     section: string;
     row?: string;
     seat?: string;
+  };
+  // Propiedades para tickets transferidos
+  currentOwner?: {
+    name: string;
+    dni: string;
+    email: string;
+    phone: string;
+  };
+  transferInfo?: {
+    recipientName: string;
+    recipientLastName: string;
+    recipientDni: string;
+    recipientEmail: string;
+    recipientPhone: string;
+    transferDate: string;
+    originalOwner: any;
   };
 }
 
@@ -70,10 +87,11 @@ export const PurchaseDetail = () => {
       const transaction = transactions.find(t => t.id === id);
       
       // Mapear status del ticket al status de compra
-      const statusMap: Record<string, 'active' | 'used' | 'cancelled' | 'resold'> = {
+      const statusMap: Record<string, 'active' | 'used' | 'cancelled' | 'resold' | 'transferred'> = {
         'custody': 'active',
         'released': 'active', 
-        'resold': 'resold'
+        'resold': 'resold',
+        'transferred': 'transferred'
       };
       
       setPurchase({
@@ -92,7 +110,10 @@ export const PurchaseDetail = () => {
           section: ticket.zone,
           row: `${Math.floor(Math.random() * 20) + 1}`,
           seat: `${Math.floor(Math.random() * 30) + 1}`
-        }
+        },
+        // Incluir información de transferencia si existe
+        currentOwner: ticket.currentOwner,
+        transferInfo: ticket.transferInfo
       });
     }
   };
@@ -129,14 +150,72 @@ export const PurchaseDetail = () => {
     );
   };
 
-  const handleDownloadPDF = () => {
-    // Simular descarga de PDF
-    const element = document.createElement('a');
-    element.href = `data:text/plain;charset=utf-8,TICKET DIGITAL - ${purchase?.eventName}\nZona: ${purchase?.zone}\nFecha: ${purchase?.eventDate}\nCódigo QR: ${purchase?.qrCode}`;
-    element.download = `ticket-${purchase?.id}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const handleDownloadPDF = async () => {
+    if (!purchase) return;
+
+    try {
+      // Determinar quién es el titular actual del ticket
+      let ticketOwner;
+      
+      if (purchase.transferInfo && purchase.currentOwner) {
+        // Si el ticket fue transferido, usar datos del destinatario
+        ticketOwner = {
+          name: purchase.currentOwner.name,
+          dni: purchase.currentOwner.dni
+        };
+        
+        toast({
+          title: "🔄 Generando ticket transferido",
+          description: `PDF para ${purchase.currentOwner.name}`,
+        });
+      } else {
+        // Si no fue transferido, usar datos del comprador original
+        const userProfile = JSON.parse(localStorage.getItem('gatex_user_profile') || '{}');
+        ticketOwner = {
+          name: userProfile.name || 'Usuario',
+          dni: userProfile.dni || ''
+        };
+      }
+      
+      const seatInfo = purchase.seatDetails?.seat 
+        ? `${purchase.seatDetails.section} - Fila ${purchase.seatDetails.row} - Asiento ${purchase.seatDetails.seat}`
+        : purchase.zone;
+      
+      const ticketData: TicketData = {
+        id: purchase.id,
+        eventName: purchase.eventName,
+        date: purchase.eventDate,
+        location: purchase.eventLocation || 'Lima, Perú',
+        zone: purchase.zone,
+        seat: seatInfo,
+        price: purchase.price,
+        userName: ticketOwner.name,
+        userDNI: ticketOwner.dni,
+        qrCode: purchase.qrCode || `GATEX-TICKET-${purchase.id}`,
+        seatNumber: purchase.seatDetails?.seat || undefined
+      };
+
+      // Generar QR code para el PDF
+      const qrDataURL = await generateQRForPDF(ticketData);
+      const finalTicketData = {
+        ...ticketData,
+        qrCode: qrDataURL
+      };
+
+      await generateTicketPDF(finalTicketData);
+
+      toast({
+        title: "✅ PDF Descargado",
+        description: "Tu ticket PDF ha sido descargado exitosamente",
+      });
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      toast({
+        title: "Error al generar PDF",
+        description: "Hubo un problema al crear el ticket PDF. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleResell = () => {
@@ -320,6 +399,65 @@ export const PurchaseDetail = () => {
                       {getStatusBadge(purchase.status)}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Información del Titular */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <TicketIcon className="h-5 w-5 mr-2 text-primary" />
+                    Titular del Ticket
+                    {purchase.transferInfo && (
+                      <Badge variant="outline" className="ml-2 text-blue-600 border-blue-200">
+                        Transferido
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {purchase.transferInfo && purchase.currentOwner ? (
+                    // Mostrar datos del nuevo titular (ticket transferido)
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Nombre Completo</p>
+                        <p className="font-semibold">{purchase.currentOwner.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">DNI</p>
+                        <p className="font-semibold">{purchase.currentOwner.dni}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-semibold">{purchase.currentOwner.email}</p>
+                      </div>
+                      <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+                        <p><strong>Transferido el:</strong> {new Date(purchase.transferInfo.transferDate).toLocaleDateString('es-PE')}</p>
+                        <p><strong>Por:</strong> {purchase.transferInfo.originalOwner?.name || 'Usuario original'}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    // Mostrar datos del comprador original
+                    (() => {
+                      const userProfile = JSON.parse(localStorage.getItem('gatex_user_profile') || '{}');
+                      return (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Nombre Completo</p>
+                            <p className="font-semibold">{userProfile.name || 'Usuario'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">DNI</p>
+                            <p className="font-semibold">{userProfile.dni || 'No especificado'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p className="font-semibold">{userProfile.email || 'No especificado'}</p>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
                 </CardContent>
               </Card>
 

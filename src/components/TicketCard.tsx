@@ -1,18 +1,20 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Clock, CheckCircle, AlertCircle, Eye } from "lucide-react";
+import { QrCode, Clock, CheckCircle, AlertCircle, Eye, Users } from "lucide-react";
 
 interface TicketCardProps {
   id: string;
   eventName: string;
   eventDate: string;
   zone: string;
-  status: "custody" | "released" | "resold" | "resale";
+  status: "custody" | "released" | "resold" | "resale" | "transferred";
   price: number;
   onViewQR?: () => void;
   onResell?: () => void;
   onViewDetails?: () => void;
+  onTransfer?: () => void;
+  transferredTo?: string;
 }
 
 export const TicketCard = ({ 
@@ -24,7 +26,9 @@ export const TicketCard = ({
   price,
   onViewQR,
   onResell,
-  onViewDetails 
+  onViewDetails,
+  onTransfer,
+  transferredTo 
 }: TicketCardProps) => {
   const statusConfig = {
     custody: {
@@ -47,6 +51,11 @@ export const TicketCard = ({
       label: "Revendido",
       color: "bg-blue-400/20 text-blue-600",
     },
+    transferred: {
+      icon: Users,
+      label: "Transferido",
+      color: "bg-purple-400/20 text-purple-600",
+    },
   };
 
   const StatusIcon = statusConfig[status].icon;
@@ -64,6 +73,15 @@ export const TicketCard = ({
           {statusConfig[status].label}
         </Badge>
       </div>
+
+      {status === "transferred" && transferredTo && (
+        <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
+          <p className="text-sm text-purple-700">
+            <Users className="inline mr-1 h-4 w-4" />
+            Transferido a: <span className="font-medium">{transferredTo}</span>
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-4 border-t border-border/50">
         <div>
@@ -87,6 +105,17 @@ export const TicketCard = ({
           {onResell && status === "custody" && (
             <Button variant="default" size="sm" onClick={onResell}>
               Revender
+            </Button>
+          )}
+          {onTransfer && (status === "custody" || status === "released") && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onTransfer}
+              className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Transferir
             </Button>
           )}
           {status === "resale" && (

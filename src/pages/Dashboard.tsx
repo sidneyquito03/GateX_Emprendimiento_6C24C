@@ -3,6 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { TicketCard } from "@/components/TicketCard";
 import { QRModal } from "@/components/QRModal";
+import { TicketTransfer } from "@/components/TicketTransfer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -16,6 +17,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [showQR, setShowQR] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [ticketToTransfer, setTicketToTransfer] = useState<any>(null);
   const [tickets, setTickets] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -54,6 +57,46 @@ const Dashboard = () => {
     // Obtener rol actual
     const role = localStorage.getItem("userRole") || "fan";
     setCurrentRole(role);
+  };
+
+  const handleTransferTicket = (ticket: any) => {
+    setTicketToTransfer(ticket);
+    setShowTransfer(true);
+  };
+
+  const handleTransferComplete = (transferData: any) => {
+    // Actualizar el estado del ticket a transferido con todos los datos del destinatario
+    const updatedTickets = tickets.map(ticket => 
+      ticket.id === transferData.ticketId 
+        ? { 
+            ...ticket, 
+            status: 'transferred', 
+            transferredTo: transferData.recipientName + ' ' + transferData.recipientLastName,
+            // Datos del nuevo titular para el PDF
+            currentOwner: {
+              name: `${transferData.recipientName} ${transferData.recipientLastName}`,
+              dni: transferData.recipientDni,
+              email: transferData.recipientEmail,
+              phone: transferData.recipientPhone
+            },
+            transferInfo: {
+              ...transferData,
+              transferDate: new Date().toISOString(),
+              originalOwner: JSON.parse(localStorage.getItem('gatex_user_profile') || '{}')
+            }
+          }
+        : ticket
+    );
+    
+    setTickets(updatedTickets);
+    
+    // Actualizar en localStorage
+    localStorage.setItem('gatex_user_tickets', JSON.stringify(updatedTickets));
+    
+    toast({
+      title: "¡Transferencia exitosa!",
+      description: `Tu ticket ha sido transferido a ${transferData.recipientName} ${transferData.recipientLastName}`,
+    });
   };
 
   const stats = userStats ? [
@@ -224,6 +267,7 @@ const Dashboard = () => {
                         });
                         handleResell(ticket.id);
                       }}
+                      onTransfer={() => handleTransferTicket(ticket)}
                     />
                   </div>
                 ))
@@ -244,6 +288,18 @@ const Dashboard = () => {
         onClose={() => setShowQR(false)}
         ticket={selectedTicket}
       />
+
+      {ticketToTransfer && (
+        <TicketTransfer
+          isOpen={showTransfer}
+          onClose={() => {
+            setShowTransfer(false);
+            setTicketToTransfer(null);
+          }}
+          ticket={ticketToTransfer}
+          onTransferComplete={handleTransferComplete}
+        />
+      )}
 
       <Footer />
     </div>

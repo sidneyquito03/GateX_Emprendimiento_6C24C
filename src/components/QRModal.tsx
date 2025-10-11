@@ -3,10 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Share, X, FileText } from "lucide-react";
+import { Download, Share, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { generateTicketPDF, generateQRForPDF, type TicketData } from "@/lib/pdfGenerator";
-import { getUserProfile } from "@/lib/localStorage";
 
 interface QRModalProps {
   isOpen: boolean;
@@ -63,48 +61,7 @@ export const QRModal = ({ isOpen, onClose, ticket }: QRModalProps) => {
     }
   };
 
-  const handleDownloadPDF = async () => {
-    if (!ticket) return;
-    
-    try {
-      const userProfile = getUserProfile();
-      
-      // Crear objeto con ubicación por defecto
-      const ticketWithLocation = {
-        ...ticket,
-        location: "Lima, Perú"
-      };
-      
-      const qrForPDF = await generateQRForPDF(ticketWithLocation);
-      
-      const ticketData: TicketData = {
-        id: ticket.id,
-        eventName: ticket.eventName,
-        date: ticket.date,
-        location: "Lima, Perú",
-        zone: ticket.zone,
-        price: ticket.price,
-        seat: ticket.seat,
-        seatNumber: ticket.seatNumbers?.join(", ") || ticket.seat || "General",
-        qrCode: qrForPDF,
-        userName: userProfile?.name || "Usuario GateX",
-        userDNI: userProfile?.dni || userProfile?.id || "No especificado"
-      };
-      
-      await generateTicketPDF(ticketData);
-      
-      toast({
-        title: "✅ PDF Generado",
-        description: "Tu ticket profesional ha sido descargado exitosamente",
-      });
-    } catch (error) {
-      toast({
-        title: "Error al generar PDF",
-        description: "Hubo un problema al crear el ticket PDF. Intenta nuevamente.",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const handleShare = async () => {
     if (ticket) {
@@ -223,14 +180,6 @@ Descarga tu código QR desde la app GateX
 
           {/* Botones de acción */}
           <div className="flex flex-col gap-2">
-            <Button 
-              onClick={handleDownloadPDF}
-              disabled={!qrCode}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium shadow-lg"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              📄 Descargar Ticket PDF Profesional
-            </Button>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
